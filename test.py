@@ -35,7 +35,7 @@ class MyMainForm(QMainWindow, rule_tab.Ui_Form):
         self.tableWidget.setCellWidget(self.tableWidget.rowCount() - 1, 0, checkbox)
         self.tableWidget.setCellWidget(self.tableWidget.rowCount() - 1, 2, comBox1)
         self.tableWidget.setCellWidget(self.tableWidget.rowCount() - 1, 4, comBox2)
-        self.tableWidget.setCellWidget(self.tableWidget.rowCount() - 1, 6, comBox3)
+        self.tableWidget.setCellWidget(self.tableWidget.rowCount() - 1, 7, comBox3)
 
     def del_rule(self):
         if self.tableWidget.rowCount() > 0:
@@ -46,7 +46,7 @@ class MyMainForm(QMainWindow, rule_tab.Ui_Form):
             for j in range(self.tableWidget.columnCount()):
                 if j == 0:
                     print(self.tableWidget.cellWidget(i, j).isChecked(), end=', ')
-                elif j == 2 or j == 4 or j == 6:
+                elif j == 2 or j == 4 or j == 7:
                     print(self.tableWidget.cellWidget(i, j).currentText(), end=', ')
                 elif self.tableWidget.item(i, j) is not None:
                     print(self.tableWidget.item(i, j).text(), end=', ')

@@ -35,10 +35,10 @@
     <bool>true</bool>
    </attribute>
    <attribute name="horizontalHeaderMinimumSectionSize">
-    <number>75</number>
+    <number>70</number>
    </attribute>
    <attribute name="horizontalHeaderDefaultSectionSize">
-    <number>75</number>
+    <number>70</number>
    </attribute>
    <attribute name="horizontalHeaderHighlightSections">
     <bool>true</bool>
@@ -75,12 +75,12 @@
    </column>
    <column>
     <property name="text">
-     <string>Judge</string>
+     <string>Next</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>Next</string>
+     <string>Judge</string>
     </property>
    </column>
    <column>
@@ -91,6 +91,11 @@
    <column>
     <property name="text">
      <string>Wait T</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>Limit T</string>
     </property>
    </column>
    <column>
