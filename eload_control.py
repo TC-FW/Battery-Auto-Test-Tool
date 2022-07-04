@@ -5,9 +5,6 @@ import serial
 
 class HengHuiEload:
     def __init__(self, port, baud):
-        self.port = port
-        self.baud = baud
-
         self.ser = serial.Serial(port=port, baudrate=baud, stopbits=2)
 
     def serial_read_message(self):
@@ -19,11 +16,6 @@ class HengHuiEload:
                 temp += string
             if (time.time() - time_start) > 0.5:
                 break
-            if len(temp) < 4:
-                continue
-            else:
-                break
-
         return temp
 
     def write_info(self, string):
