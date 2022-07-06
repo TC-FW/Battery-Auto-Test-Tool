@@ -17,7 +17,7 @@
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout" rowstretch="1,4,5" columnstretch="6,0,7">
      <item row="2" column="0" colspan="2">
-      <widget class="QTableWidget" name="tableWidget">
+      <widget class="QTableWidget" name="test_status_table">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -47,16 +47,6 @@
        <row>
         <property name="text">
          <string>Stop Judge</string>
-        </property>
-       </row>
-       <row>
-        <property name="text">
-         <string>Next Judge</string>
-        </property>
-       </row>
-       <row>
-        <property name="text">
-         <string>Wait Time</string>
         </property>
        </row>
        <row>
@@ -102,14 +92,14 @@
      <item row="0" column="0">
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="2" column="0">
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="test_start_button">
          <property name="text">
           <string>START</string>
          </property>
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QPushButton" name="pushButton_2">
+        <widget class="QPushButton" name="test_stop_button">
          <property name="text">
           <string>STOP</string>
          </property>
@@ -125,7 +115,20 @@
       </layout>
      </item>
      <item row="0" column="2" rowspan="3">
-      <widget class="QTableWidget" name="tableWidget_2"/>
+      <widget class="QTableWidget" name="register_table">
+       <property name="rowCount">
+        <number>0</number>
+       </property>
+       <attribute name="horizontalHeaderCascadingSectionResizes">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="horizontalHeaderMinimumSectionSize">
+        <number>100</number>
+       </attribute>
+       <attribute name="horizontalHeaderDefaultSectionSize">
+        <number>150</number>
+       </attribute>
+      </widget>
      </item>
     </layout>
    </item>

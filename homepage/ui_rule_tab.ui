@@ -25,113 +25,6 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="2" column="0" colspan="6">
-      <widget class="QTableWidget" name="rule_table">
-       <property name="lineWidth">
-        <number>1</number>
-       </property>
-       <property name="rowCount">
-        <number>0</number>
-       </property>
-       <attribute name="horizontalHeaderVisible">
-        <bool>true</bool>
-       </attribute>
-       <attribute name="horizontalHeaderCascadingSectionResizes">
-        <bool>true</bool>
-       </attribute>
-       <attribute name="horizontalHeaderMinimumSectionSize">
-        <number>70</number>
-       </attribute>
-       <attribute name="horizontalHeaderDefaultSectionSize">
-        <number>70</number>
-       </attribute>
-       <attribute name="horizontalHeaderHighlightSections">
-        <bool>true</bool>
-       </attribute>
-       <column>
-        <property name="text">
-         <string>Check</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Group</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>C/D/S</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Stop</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Judge</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Value</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Next</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Judge</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Value</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Wait T</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Limit T</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Mode / V</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Value / C</string>
-        </property>
-       </column>
-      </widget>
-     </item>
-     <item row="4" column="1" colspan="2">
-      <widget class="QLineEdit" name="group_cycle_count_input">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Group循环次数 (空格隔开):</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="1">
       <widget class="QComboBox" name="log_first_value_combox">
        <property name="editable">
@@ -147,6 +40,20 @@
          <string>Time</string>
         </property>
        </item>
+      </widget>
+     </item>
+     <item row="1" column="4">
+      <widget class="QPushButton" name="save_setting_button">
+       <property name="text">
+        <string>Save Setting</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="5">
+      <widget class="QPushButton" name="enter_button">
+       <property name="text">
+        <string>OK</string>
+       </property>
       </widget>
      </item>
      <item row="0" column="0" colspan="5">
@@ -177,10 +84,20 @@
        </item>
       </layout>
      </item>
-     <item row="5" column="5">
-      <widget class="QPushButton" name="enter_button">
+     <item row="1" column="5">
+      <widget class="QPushButton" name="load_setting_button">
        <property name="text">
-        <string>OK</string>
+        <string>Load Setting</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1" colspan="2">
+      <widget class="QLineEdit" name="group_cycle_count_input">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
       </widget>
      </item>
@@ -235,18 +152,86 @@
        </item>
       </layout>
      </item>
-     <item row="1" column="4">
-      <widget class="QPushButton" name="save_setting_button">
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_3">
        <property name="text">
-        <string>Save Setting</string>
+        <string>Group循环次数 (空格隔开):</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="5">
-      <widget class="QPushButton" name="load_setting_button">
-       <property name="text">
-        <string>Load Setting</string>
+     <item row="2" column="0" colspan="6">
+      <widget class="QTableWidget" name="rule_table">
+       <property name="lineWidth">
+        <number>1</number>
        </property>
+       <property name="rowCount">
+        <number>0</number>
+       </property>
+       <attribute name="horizontalHeaderVisible">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="horizontalHeaderCascadingSectionResizes">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="horizontalHeaderMinimumSectionSize">
+        <number>90</number>
+       </attribute>
+       <attribute name="horizontalHeaderDefaultSectionSize">
+        <number>90</number>
+       </attribute>
+       <attribute name="horizontalHeaderHighlightSections">
+        <bool>true</bool>
+       </attribute>
+       <column>
+        <property name="text">
+         <string>Check</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Group</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>C/D/S</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Stop</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Judge</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Value</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Wait T</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Limit T</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Mode / V</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Value / C</string>
+        </property>
+       </column>
       </widget>
      </item>
     </layout>
