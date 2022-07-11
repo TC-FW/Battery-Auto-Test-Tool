@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1018</width>
+    <height>698</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_3" rowstretch="7,5,5,5">
+   <item row="2" column="0" colspan="2">
+    <layout class="QGridLayout" name="gridLayout_2" rowstretch="2,1,1" columnstretch="2,1,3,1,1,3,1,2,2">
+     <item row="1" column="3">
+      <widget class="QPushButton" name="dc_voltage_set_button">
+       <property name="text">
+        <string>Set</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="5">
+      <widget class="QLineEdit" name="dc_current_input"/>
+     </item>
+     <item row="1" column="8">
+      <widget class="QPushButton" name="dc_output_off_button">
+       <property name="text">
+        <string>输出 OFF</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QLineEdit" name="dc_voltage_input"/>
+     </item>
+     <item row="1" column="6">
+      <widget class="QPushButton" name="dc_current_set_button">
+       <property name="text">
+        <string>Set</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="label_13">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;电压&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="7">
+      <widget class="QPushButton" name="eload_input_on_button">
+       <property name="text">
+        <string>输入 ON</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="4">
+      <widget class="QLabel" name="label_16">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;数值&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4">
+      <widget class="QLabel" name="label_14">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;电流&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLabel" name="label_15">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;模式&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_11">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;DC&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="6">
+      <widget class="QPushButton" name="eload_mode_set_button">
+       <property name="text">
+        <string>Set</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="8">
+      <widget class="QPushButton" name="eload_input_off_button">
+       <property name="text">
+        <string>输入 OFF</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_10">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;Eload&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="5">
+      <widget class="QLineEdit" name="eload_mode_value_input"/>
+     </item>
+     <item row="1" column="7">
+      <widget class="QPushButton" name="dc_output_on_button">
+       <property name="text">
+        <string>输出 ON</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="3">
+      <widget class="QLabel" name="label_12">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;DC / ELoad控制&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QComboBox" name="eload_mode_combobox">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string>CC</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>CP</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>CR</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>TCC</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <layout class="QGridLayout" name="gridLayout" rowstretch="2,1,1,1,1" columnstretch="1,1,3,1,3,1,3">
+     <property name="spacing">
+      <number>6</number>
+     </property>
+     <item row="1" column="1">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;型号&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="6">
+      <widget class="QComboBox" name="eload_baud_combobox">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <property name="currentText">
+        <string>57600</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>1200</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>2400</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4800</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>9600</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>14400</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>19200</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>28800</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>38400</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>57600</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>115200</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="2" column="4">
+      <widget class="QComboBox" name="eload_serial_combobox">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="5">
+      <widget class="QLabel" name="label_9">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;波特率&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;型号&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="QComboBox" name="eload_model_combobox">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string>Henghui</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="2" column="3">
+      <widget class="QLabel" name="label_7">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;串口&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;DC&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;Eload&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="6">
+      <widget class="QComboBox" name="dc_baud_combobox">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <property name="currentText">
+        <string>57600</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>1200</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>2400</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4800</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>9600</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>14400</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>19200</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>28800</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>38400</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>57600</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>115200</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="5">
+      <widget class="QLabel" name="label_8">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;波特率&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QComboBox" name="dc_model_combobox">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string>HengHui</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="3">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;串口&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4">
+      <widget class="QComboBox" name="dc_serial_combobox">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="6">
+      <widget class="QPushButton" name="serial_config_enter_button">
+       <property name="text">
+        <string>确认</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="5">
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="0" column="0" colspan="2">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;串口设置&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <spacer name="verticalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="3" column="0">
+    <spacer name="verticalSpacer_3">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

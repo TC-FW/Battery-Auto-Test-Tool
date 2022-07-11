@@ -24,6 +24,12 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <attribute name="horizontalHeaderMinimumSectionSize">
+        <number>30</number>
+       </attribute>
+       <attribute name="horizontalHeaderDefaultSectionSize">
+        <number>300</number>
+       </attribute>
        <row>
         <property name="text">
          <string>Group</string>
@@ -59,21 +65,6 @@
          <string>Value</string>
         </property>
        </column>
-       <column>
-        <property name="text">
-         <string>Judge</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Status</string>
-        </property>
-       </column>
-       <item row="0" column="2">
-        <property name="text">
-         <string/>
-        </property>
-       </item>
       </widget>
      </item>
      <item row="1" column="0" colspan="2">

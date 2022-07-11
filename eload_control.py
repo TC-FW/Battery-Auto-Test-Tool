@@ -4,8 +4,13 @@ import serial
 
 
 class HengHuiEload:
-    def __init__(self, port, baud):
-        self.ser = serial.Serial(port=port, baudrate=baud, stopbits=2)
+    def __init__(self):
+        self.ser = serial.Serial()
+        self.connect_flag = False
+
+    def device_connect(self, port, baud, stopbits):
+        self.ser = serial.Serial(port=port, baudrate=baud, stopbits=stopbits)
+        self.connect_flag = True
 
     def serial_read_message(self):
         temp = ''
@@ -148,3 +153,7 @@ class HengHuiEload:
             return True
         except ValueError:
             return False
+
+    def serial_disconnect(self):
+        self.ser.close()
+        self.connect_flag = False

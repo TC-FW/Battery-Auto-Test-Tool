@@ -72,6 +72,11 @@
         <string>规则设定</string>
        </attribute>
       </widget>
+      <widget class="QWidget" name="window_tab_3">
+       <attribute name="title">
+        <string>串口设置</string>
+       </attribute>
+      </widget>
      </widget>
     </item>
    </layout>
