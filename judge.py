@@ -8,7 +8,7 @@ def judge(value1, value2, condition):
             return float(value1) == float(value2)
         if condition == '>=':
             return float(value1) >= float(value2)
-        if condition == '<':
+        if condition == '<=':
             return float(value1) <= float(value2)
         if condition == 'Set':
             return (int(value1, 16) & int(value2, 16)) == int(value2, 16)

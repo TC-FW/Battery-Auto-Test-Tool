@@ -2,23 +2,25 @@ import os
 import re
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QMainWindow, QComboBox, QCheckBox, QHeaderView, QFileDialog, QMessageBox
-
+from PyQt5.QtWidgets import QMainWindow, QComboBox, QCheckBox, QHeaderView, QFileDialog, QMessageBox, QTableWidgetItem
+import configparser
 from homepage import ui_rule_tab
 
 
 class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
-    output_rule_signal = QtCore.pyqtSignal(str, str, str, str)
+    output_rule_signal = QtCore.pyqtSignal(str, str, str, str, str)
 
     def __init__(self, parent, tab):
         super(RuleTab, self).__init__(parent)
         self.setupUi(tab)
         self.rule_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
-        self.enter_button.clicked.connect(self.display)
+        self.enter_button.clicked.connect(self.rule_set)
         self.add_rule_button.clicked.connect(self.add_rule)
         self.del_rule_button.clicked.connect(self.del_rule)
         self.log_select_button.clicked.connect(self.log_file_select)
+        self.save_setting_button.clicked.connect(self.save_rule_file_select)
+        self.load_setting_button.clicked.connect(self.load_rule_file_select)
 
         self.register_list = []
 
@@ -46,12 +48,14 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
         self.rule_table.setCellWidget(self.rule_table.rowCount() - 1, 2, comBox1)
         self.rule_table.setCellWidget(self.rule_table.rowCount() - 1, 3, register_combox)
         self.rule_table.setCellWidget(self.rule_table.rowCount() - 1, 4, comBox2)
+        self.rule_table.setItem(self.rule_table.rowCount() - 1, 6, QTableWidgetItem('1800'))
+        self.rule_table.setItem(self.rule_table.rowCount() - 1, 7, QTableWidgetItem('54000'))
 
     def del_rule(self):
         if self.rule_table.rowCount() > 0:
             self.rule_table.setRowCount(self.rule_table.rowCount() - 1)
 
-    def display(self):
+    def rule_set(self):
         temp_rule = ''
         for i in range(self.rule_table.rowCount()):
             for j in range(self.rule_table.columnCount()):
@@ -66,8 +70,17 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
                 if j == self.rule_table.columnCount() - 1:
                     temp_rule = temp_rule[:-1] + ';'
 
+        dc_init_mode = (str(self.dc_init_mode1_checkbox.isChecked()) + ',' + self.dc_init_mode1_v_input.text() +
+                        ',' + self.dc_init_mode1_i_input.text())
+
         self.output_rule_signal.emit(self.file_select_input.text(), self.log_first_value_combox.currentText(),
-                                     temp_rule, self.group_cycle_count_input.text())
+                                     temp_rule, self.group_cycle_count_input.text(), dc_init_mode)
+
+        if not os.path.exists('temp.ini'):
+            file = open('temp.ini', 'w', encoding='utf-8')
+            file.close()
+        self.save_rule('temp.ini')
+
         return True
 
     def log_file_select(self):
@@ -100,3 +113,86 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
                 return False
 
         self.register_list = re.split(';|,|\t|\n', line)
+
+        for i in range(self.rule_table.rowCount()):
+            temp_value = self.rule_table.cellWidget(i, 3).currentText()
+            self.rule_table.cellWidget(i, 3).clear()
+            self.rule_table.cellWidget(i, 3).addItems(self.register_list)
+            self.rule_table.cellWidget(i, 3).setCurrentText(temp_value)
+
+    def save_rule_file_select(self):
+        file_name = QFileDialog.getSaveFileName(self, "选取文件", '-LearningSetting', "INI Files(*.ini)")
+        if file_name[0]:
+            if not os.path.exists(file_name[0]):
+                file = open(file_name[0], 'w', encoding='utf-8')
+                file.close()
+            self.save_rule(file_name[0])
+
+    def load_rule_file_select(self):
+        file_name = QFileDialog.getOpenFileName(self, "选取文件", os.getcwd(), "INI Files(*.ini)")
+        if file_name[0]:
+            self.load_rule(file_name[0])
+
+    def save_rule(self, file_path):
+        config = configparser.ConfigParser()
+        config.read(file_path, encoding="utf-8")
+
+        if not config.has_section("Rule"):
+            config.add_section("Rule")
+        else:
+            config.remove_section("Rule")
+            config.add_section("Rule")
+
+        config.set('Rule', 'Row_Count', str(self.rule_table.rowCount()))
+
+        for i in range(self.rule_table.rowCount()):
+            temp_rule = ''
+            for j in range(self.rule_table.columnCount()):
+                if j == 0:
+                    temp_rule += str(self.rule_table.cellWidget(i, j).isChecked()) + ','
+                elif j == 2 or j == 3 or j == 4:
+                    temp_rule += str(self.rule_table.cellWidget(i, j).currentText()) + ','
+                elif self.rule_table.item(i, j) is not None:
+                    temp_rule += self.rule_table.item(i, j).text() + ','
+                else:
+                    temp_rule += '' + ','
+                if j == self.rule_table.columnCount() - 1:
+                    config.set('Rule', 'Rule_Setting_' + str(i), temp_rule[:-1])
+
+        config.set('Rule', 'Init Mode Enable', str(self.dc_init_mode1_checkbox.isChecked()))
+        config.set('Rule', 'Init Mode V', self.dc_init_mode1_v_input.text())
+        config.set('Rule', 'Init Mode I', self.dc_init_mode1_i_input.text())
+        config.set('Rule', 'Group Cycle Count', self.group_cycle_count_input.text())
+
+        config.write(open(file_path, 'w', encoding='utf-8'))
+
+    def load_rule(self, file_path):
+        config = configparser.ConfigParser()
+        config.read(file_path, encoding="utf-8")
+        self.rule_table.setRowCount(0)
+        if config.has_section("Rule"):
+            try:
+                for i in range(int(config.get('Rule', 'Row_Count'))):
+                    self.add_rule()
+                    temp_rule = config.get('Rule', 'Rule_Setting_' + str(i)).split(',')
+                    for j in range(self.rule_table.columnCount()):
+                        if j == 0:
+                            if temp_rule[0] == 'True':
+                                self.rule_table.cellWidget(self.rule_table.rowCount() - 1, j).setChecked(True)
+                            else:
+                                self.rule_table.cellWidget(self.rule_table.rowCount() - 1, j).setChecked(False)
+                        elif j == 2 or j == 3 or j == 4:
+                            self.rule_table.cellWidget(self.rule_table.rowCount() - 1, j).setCurrentText(temp_rule[j])
+                        else:
+                            self.rule_table.setItem(self.rule_table.rowCount() - 1, j, QTableWidgetItem(temp_rule[j]))
+
+                if config.get('Rule', 'Init Mode Enable') == 'True':
+                    self.dc_init_mode1_checkbox.setChecked(True)
+
+                self.dc_init_mode1_v_input.setText(config.get('Rule', 'Init Mode V'))
+                self.dc_init_mode1_i_input.setText(config.get('Rule', 'Init Mode I'))
+                self.group_cycle_count_input.setText(config.get('Rule', 'Group Cycle Count'))
+                return True
+
+            except:
+                return False

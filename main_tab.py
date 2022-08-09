@@ -1,9 +1,7 @@
 import re
-import threading
-import time
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem, QAbstractItemView
 
 from homepage import ui_main_tab
 
@@ -31,6 +29,9 @@ class MainTab(QMainWindow, ui_main_tab.Ui_Form):
 
         self.test_start_button.clicked.connect(lambda: self.output_test_start_signal.emit())
         self.test_stop_button.clicked.connect(lambda: self.output_test_stop_signal.emit())
+
+        self.test_status_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.register_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
     def table_register_name_update(self, register_name_line):
         register_name = re.split(';|,|\t|\n', register_name_line)

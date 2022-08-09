@@ -1,3 +1,4 @@
+import threading
 import time
 
 import serial
@@ -6,7 +7,9 @@ import serial
 class HengHuiEload:
     def __init__(self):
         self.ser = serial.Serial()
+        self.tran_cp_flag = False
         self.connect_flag = False
+        self.control_flag = False
 
     def device_connect(self, port, baud, stopbits):
         self.ser = serial.Serial(port=port, baudrate=baud, stopbits=stopbits)
@@ -28,7 +31,10 @@ class HengHuiEload:
 
     def set_cc_mode(self, current):
         error_count = 0
+        while self.control_flag:
+            continue
         while True:
+            self.control_flag = True
             self.ser.write('MODE CCH\n'.encode('utf-8'))
             time.sleep(0.1)
             self.ser.write(('CURR ' + current + '\n').encode('utf-8'))
@@ -36,32 +42,45 @@ class HengHuiEload:
             self.ser.write('CURR?\n'.encode('utf-8'))
             read_back_current = self.serial_read_message().replace('\n', '')
             if self.check_float(read_back_current) and float(read_back_current) == float(current):
+                self.control_flag = False
                 return True
             elif error_count <= 5:
+                error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
 
     def set_cp_mode(self, power):
         error_count = 0
+        while self.control_flag:
+            continue
+
         while True:
-            self.ser.write('MODE CPC\n'.encode('utf-8'))
+            self.control_flag = True
+            self.ser.write('MODE CPV\n'.encode('utf-8'))
             time.sleep(0.1)
             self.ser.write(('POW ' + power + '\n').encode('utf-8'))
             time.sleep(0.1)
             self.ser.write('POW?\n'.encode('utf-8'))
             read_back_power = self.serial_read_message().replace('\n', '')
             if self.check_float(read_back_power) and float(read_back_power) == float(power):
+                self.control_flag = False
                 return True
             elif error_count <= 5:
                 error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
 
     def set_cr_mode(self, resistance):
         error_count = 0
+        while self.control_flag:
+            continue
+
         while True:
+            self.control_flag = True
             self.ser.write('MODE CRH\n'.encode('utf-8'))
             time.sleep(0.1)
             self.ser.write(('RES ' + resistance + '\n').encode('utf-8'))
@@ -69,14 +88,19 @@ class HengHuiEload:
             self.ser.write('RES?\n'.encode('utf-8'))
             read_back_resistance = self.serial_read_message().replace('\n', '')
             if self.check_float(read_back_resistance) and float(read_back_resistance) == float(resistance):
+                self.control_flag = False
                 return True
             elif error_count <= 5:
                 error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
 
-    def set_tran_cc_mode(self, current_l, time_l, current_h, time_h):
+    def set_tran_cc_mode(self, power_l, time_l, power_h, time_h):
+        while self.control_flag:
+            continue
+        self.control_flag = True
         error_count = 0
         self.ser.write('TRAN ON\n'.encode('utf-8'))
         time.sleep(0.1)
@@ -87,63 +111,89 @@ class HengHuiEload:
         self.ser.write(':TRAN:RTIM MIN\n'.encode('utf-8'))
         time.sleep(0.1)
         while True:
-            self.ser.write((':CURR:LLEV ' + current_l + '\n').encode('utf-8'))
+            self.ser.write((':CURR:LLEV ' + power_l + '\n').encode('utf-8'))
             time.sleep(0.1)
             self.ser.write((':TRAN:LTIM ' + time_l + '\n').encode('utf-8'))
             time.sleep(0.1)
-            self.ser.write((':CURR:HLEV ' + current_h + '\n').encode('utf-8'))
+            self.ser.write((':CURR:HLEV ' + power_h + '\n').encode('utf-8'))
             time.sleep(0.1)
             self.ser.write((':TRAN:HTIM ' + time_h + '\n').encode('utf-8'))
             time.sleep(0.1)
 
             self.ser.write(':CURR:LLEV?\n'.encode('utf-8'))
-            read_back_current_l = self.serial_read_message().replace('\n', '')
+            read_back_power_l = self.serial_read_message().replace('\n', '')
             self.ser.write(':TRAN:LTIM?\n'.encode('utf-8'))
             read_back_time_l = self.serial_read_message().replace('\n', '')
             self.ser.write(':CURR:HLEV?\n'.encode('utf-8'))
-            read_back_current_h = self.serial_read_message().replace('\n', '')
+            read_back_power_h = self.serial_read_message().replace('\n', '')
             self.ser.write(':TRAN:HTIM?\n'.encode('utf-8'))
             read_back_time_h = self.serial_read_message().replace('\n', '')
 
-            if ((self.check_float(read_back_current_l) and self.check_float(read_back_time_l) and
-                 self.check_float(read_back_current_h) and self.check_float(read_back_time_h)) and
-                    (float(read_back_current_l) == float(current_l) and float(read_back_time_l) == float(time_l) and
-                     float(read_back_current_h) == float(current_h) and float(read_back_time_h) == float(time_h))):
+            if ((self.check_float(read_back_power_l) and self.check_float(read_back_time_l) and
+                 self.check_float(read_back_power_h) and self.check_float(read_back_time_h)) and
+                    (float(read_back_power_l) == float(power_l) and float(read_back_time_l) == float(time_l) and
+                     float(read_back_power_h) == float(power_h) and float(read_back_time_h) == float(time_h))):
+                self.control_flag = False
                 return True
             elif error_count <= 5:
                 error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
+
+    def set_tran_cp_mode(self, power_l, time_l, power_h, time_h):
+        tran_cp_thread = threading.Thread(target=self.tran_cp, args=(power_l, time_l, power_h, time_h,), daemon=True)
+        tran_cp_thread.start()
+
+    def tran_cp(self, power_l, time_l, power_h, time_h):
+        self.tran_cp_flag = True
+        while self.tran_cp_flag:
+            self.set_cp_mode(power_l)
+            time.sleep(int(time_l) - 0.5)
+            self.set_cp_mode(power_h)
+            time.sleep(int(time_h) - 0.5)
 
     def input_on(self):
         error_count = 0
+        while self.control_flag:
+            continue
         while True:
+            self.control_flag = True
             self.ser.write('INPUT ON\n'.encode('utf-8'))
             time.sleep(0.1)
             self.ser.write('INPUT?\n'.encode('utf-8'))
             read_back_input_status = self.serial_read_message().replace('\n', '')
             if read_back_input_status != '' and read_back_input_status == 'ON':
+                self.control_flag = False
                 return True
             elif error_count <= 5:
                 error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
 
     def input_off(self):
         error_count = 0
+        while self.control_flag:
+            continue
         while True:
+            self.control_flag = True
+            if self.tran_cp_flag:
+                self.tran_cp_flag = False
             self.ser.write('INPUT OFF\n'.encode('utf-8'))
             time.sleep(0.1)
             self.ser.write('INPUT?\n'.encode('utf-8'))
             read_back_input_status = self.serial_read_message().replace('\n', '')
             if read_back_input_status != '' and read_back_input_status == 'OFF':
+                self.control_flag = False
                 return True
             elif error_count <= 5:
                 error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
 
     @staticmethod

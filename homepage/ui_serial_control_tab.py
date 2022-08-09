@@ -18,7 +18,6 @@ class MyComboBox(QtWidgets.QComboBox):
         self.clicked.emit()  # 发送信号
         super(MyComboBox, self).showPopup()
 
-
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -81,6 +80,7 @@ class Ui_Form(object):
         self.eload_mode_combobox = MyComboBox(Form)
         self.eload_mode_combobox.setEditable(True)
         self.eload_mode_combobox.setObjectName("eload_mode_combobox")
+        self.eload_mode_combobox.addItem("")
         self.eload_mode_combobox.addItem("")
         self.eload_mode_combobox.addItem("")
         self.eload_mode_combobox.addItem("")
@@ -194,9 +194,9 @@ class Ui_Form(object):
         self.gridLayout.setRowStretch(4, 1)
         self.gridLayout_3.addLayout(self.gridLayout, 0, 0, 1, 2)
         spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout_3.addItem(spacerItem1, 1, 0, 1, 1)
+        self.gridLayout_3.addItem(spacerItem1, 3, 0, 1, 1)
         spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.gridLayout_3.addItem(spacerItem2, 3, 0, 1, 1)
+        self.gridLayout_3.addItem(spacerItem2, 1, 0, 1, 1)
         self.gridLayout_3.setRowStretch(0, 7)
         self.gridLayout_3.setRowStretch(1, 5)
         self.gridLayout_3.setRowStretch(2, 5)
@@ -226,8 +226,9 @@ class Ui_Form(object):
         self.eload_mode_combobox.setItemText(1, _translate("Form", "CP"))
         self.eload_mode_combobox.setItemText(2, _translate("Form", "CR"))
         self.eload_mode_combobox.setItemText(3, _translate("Form", "TCC"))
+        self.eload_mode_combobox.setItemText(4, _translate("Form", "TCP"))
         self.label_4.setText(_translate("Form", "<html><head/><body><p align=\"center\">型号</p></body></html>"))
-        self.eload_baud_combobox.setCurrentText(_translate("Form", "57600"))
+        self.eload_baud_combobox.setCurrentText(_translate("Form", "1200"))
         self.eload_baud_combobox.setItemText(0, _translate("Form", "1200"))
         self.eload_baud_combobox.setItemText(1, _translate("Form", "2400"))
         self.eload_baud_combobox.setItemText(2, _translate("Form", "4800"))
@@ -244,7 +245,7 @@ class Ui_Form(object):
         self.label_7.setText(_translate("Form", "<html><head/><body><p align=\"center\">串口</p></body></html>"))
         self.label_2.setText(_translate("Form", "<html><head/><body><p><span style=\" font-size:12pt; font-weight:600;\">DC</span></p></body></html>"))
         self.label_3.setText(_translate("Form", "<html><head/><body><p><span style=\" font-size:12pt; font-weight:600;\">Eload</span></p></body></html>"))
-        self.dc_baud_combobox.setCurrentText(_translate("Form", "57600"))
+        self.dc_baud_combobox.setCurrentText(_translate("Form", "1200"))
         self.dc_baud_combobox.setItemText(0, _translate("Form", "1200"))
         self.dc_baud_combobox.setItemText(1, _translate("Form", "2400"))
         self.dc_baud_combobox.setItemText(2, _translate("Form", "4800"))

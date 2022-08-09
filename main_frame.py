@@ -3,7 +3,7 @@ import re
 import sys
 import threading
 import time
-
+import configparser
 import serial
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PyQt5 import QtCore
@@ -17,7 +17,6 @@ from homepage import ui_mainwindow
 import dc_control
 import eload_control
 
-
 '''class MyComboBox(QtWidgets.QComboBox):
     clicked = QtCore.pyqtSignal()  # 创建一个信号
 
@@ -27,7 +26,7 @@ import eload_control
 
 
 class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
-    input_rule_signal = QtCore.pyqtSignal(str, str, str, str)
+    input_rule_signal = QtCore.pyqtSignal(str, str, str, str, str)
     input_test_start_signal = QtCore.pyqtSignal()
     input_test_stop_signal = QtCore.pyqtSignal()
     input_serial_scan_signal = QtCore.pyqtSignal(str)
@@ -48,6 +47,10 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.group_loop_count = []
         self.log_file_path = ''
         self.cycle_rule = None
+
+        self.dc_init_mode = False
+        self.dc_init_current = ''
+        self.dc_init_voltage = ''
 
         self.setupUi(self)
         self.setWindowTitle("Battery Auto Testing Tool Beta V1.0")
@@ -78,9 +81,11 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.input_test_start_signal.connect(self.test_start_thread)
         self.input_test_stop_signal.connect(self.test_stop)
         self.input_serial_scan_signal.connect(self.serial_device_scan)
-        self.input_serial_connect_signal.connect(self.serial_serial_connect)
+        self.input_serial_connect_signal.connect(self.serial_connect)
         self.input_dc_control_signal.connect(self.dc_control)
         self.input_eload_control_signal.connect(self.eload_control)
+
+        self.init_setting()
 
     def serial_device_scan(self, device):
         """
@@ -92,22 +97,36 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
             return_device_list += i[0] + ' #' + i[1] + ','
         self.output_serial_list_signal.emit(device, return_device_list[:-1])
 
-    def serial_serial_connect(self, dc_serial_config, eload_serial_config):
+    def serial_connect(self, dc_serial_config, eload_serial_config):
         dc_config = dc_serial_config.split(',')
         eload_config = eload_serial_config.split(',')
+        error_flag = False
         if dc_config[0] != '' and dc_config[1] != '':
             self.dc_device.serial_disconnect()
-            self.dc_device.device_connect(dc_config[0], dc_config[1], stopbits=2)
+            try:
+                self.dc_device.device_connect(dc_config[0], dc_config[1], stopbits=2)
+            except:
+                error_flag = True
+                QMessageBox.warning(self, 'DC连接失败', '请检查串口是否被占用')
         else:
-            QMessageBox.warning(self, 'warning', '请检查DC参数是否填写完全')
+            error_flag = True
+            QMessageBox.warning(self, 'DC设置失败', '请检查DC参数是否填写完全')
 
         if eload_config[0] != '' and eload_config[1] != '':
             self.eload_device.serial_disconnect()
-            self.eload_device.device_connect(eload_config[0], eload_config[1], stopbits=2)
+            try:
+                self.eload_device.device_connect(eload_config[0], eload_config[1], stopbits=2)
+            except:
+                error_flag = True
+                QMessageBox.warning(self, 'Eload连接失败', '请检查串口是否被占用')
         else:
-            QMessageBox.warning(self, 'warning', '请检查ELoad参数是否填写完全')
+            error_flag = True
+            QMessageBox.warning(self, 'Eload设置失败', '请检查ELoad参数是否填写完全')
 
-    def rule_process(self, log_path, log_first_value, cycle_rule, group_loop_count):
+        if not error_flag:
+            QMessageBox.information(self, 'Success', '设置成功')
+
+    def rule_process(self, log_path, log_first_value, cycle_rule, group_loop_count, dc_init_config):
         # 检查Log文件路径
         if not os.path.exists(log_path):
             QMessageBox.warning(self, 'Warning', 'Log文件不存在，请检查文件路径是否正确。')
@@ -143,6 +162,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 pass
             else:
                 QMessageBox.warning(self, 'Warning', 'Group循环次数只能输入分隔符和数字')
+                return
 
         self.output_register_name_signal.emit(line)
 
@@ -150,6 +170,11 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.cycle_rule = temp_cycle_rule
         self.register_line = re.split(';|,|\t|\n', line)
         self.group_loop_count = re.split(';| |,|\t|\n', group_loop_count)
+
+        dc_init_setting = dc_init_config.split(',')
+        self.dc_init_mode = (lambda: True if dc_init_setting[0] == 'True' else False)()
+        self.dc_init_voltage = dc_init_setting[1]
+        self.dc_init_current = dc_init_setting[2]
 
         QMessageBox.information(self, 'Success', '保存成功')
 
@@ -199,8 +224,8 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         group_current_cycle_count = 1
 
         while self.test_status:
-            if self.cycle_rule[step_num][0] == 'True':
-                if self.cycle_rule[step_num][1] == group_current_num:
+            if self.cycle_rule[step_num][1] == group_current_num:
+                if self.cycle_rule[step_num][0] == 'True' and self.test_status:
                     # 更新主页面table中的group编号和group循环计数
                     if group_current_num != '':
                         self.output_test_status_table_signal.emit(0, str(group_current_num), True)
@@ -212,79 +237,125 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                     self.output_test_status_table_signal.emit(2, str(step_num + 1), False)
                     self.output_test_status_table_signal.emit(3, self.cycle_rule[step_num][2], False)
 
-                    '''ACTION START CODE'''  # 等待添加
+                    # 充放电命令
+                    self.test_action_start(self.cycle_rule[step_num][2], self.cycle_rule[step_num][8],
+                                           self.cycle_rule[step_num][9])
                     # 等待停止条件触发
                     limit_time_begin = time.time()
+                    limit_timeout_flag = False
                     while self.test_status:
+                        if self.cycle_rule[step_num][7] != '':
+                            current_limit_time = time.time() - limit_time_begin
+                            if current_limit_time < int(self.cycle_rule[step_num][7]):
+                                self.output_test_status_table_signal.emit(5, '%.2f / %s' % (
+                                    current_limit_time, self.cycle_rule[step_num][7]), False)
+                            else:
+                                self.output_test_status_table_signal.emit(5, '%.2f / %s (Timeout)' % (
+                                    current_limit_time, self.cycle_rule[step_num][7]), False)
+                                limit_timeout_flag = True
+                                break
+
                         if len(self.register_data) == len(self.register_line):
                             temp_register_value = self.register_data[
                                 self.register_line.index(self.cycle_rule[step_num][3])]
-                            if temp_register_value != '' and judge.judge(temp_register_value, self.cycle_rule[step_num][5], self.cycle_rule[step_num][4]):
+                            if temp_register_value != '' and judge.judge(temp_register_value,
+                                                                         self.cycle_rule[step_num][5],
+                                                                         self.cycle_rule[step_num][4]):
                                 self.output_test_status_table_signal.emit(4, '%s %s %s 停止条件触发' % (
-                                    temp_register_value, self.cycle_rule[step_num][4], self.cycle_rule[step_num][5]), False)
+                                    temp_register_value, self.cycle_rule[step_num][4], self.cycle_rule[step_num][5]),
+                                                                          False)
                                 break
                             else:
                                 self.output_test_status_table_signal.emit(4, '%s %s %s 未满足停止条件' % (
-                                    temp_register_value, self.cycle_rule[step_num][4], self.cycle_rule[step_num][5]), False)
+                                    temp_register_value, self.cycle_rule[step_num][4], self.cycle_rule[step_num][5]),
+                                                                          False)
                         else:
                             self.output_test_status_table_signal.emit(4, '%s %s %s 未满足停止条件' % (
                                 '', self.cycle_rule[step_num][4], self.cycle_rule[step_num][5]), False)
                         time.sleep(0.1)
 
-                    '''ACTION STOP CODE'''  # 等待添加
+                    # 充放电停止
+                    if self.cycle_rule[step_num][-1] != 'dontstop':
+                        self.test_action_stop()
+
+                    if limit_timeout_flag:
+                        break
 
                     # 等待阶段
                     begin_wait_time = time.time()
                     while self.cycle_rule[step_num][6] != '' and self.test_status:
                         current_wait_time = time.time() - begin_wait_time
-                        self.output_test_status_table_signal.emit(5, '%s / %s' % (
+                        self.output_test_status_table_signal.emit(6, '%.2f / %s' % (
                             current_wait_time, self.cycle_rule[step_num][6]), False)
                         if current_wait_time >= int(self.cycle_rule[step_num][6]):
                             break
                         time.sleep(0.1)
 
-                    if self.test_status:
-                        step_num += 1
-                        if step_num > len(self.cycle_rule) - 1:  # step计数溢出处理
-                            # 1.若该步骤未分组，直接结束测试
-                            # 2.若循环组已完成循环次数，结束测试
-                            if (self.cycle_rule[step_num - 1][1] == '' or
-                                    group_current_cycle_count >= int(self.group_loop_count[int(group_current_num) - 1])):
-                                print('Group%s循环%s' % (group_current_num, group_current_cycle_count))
-                                print('Group%s完成' % group_current_num)
-                                break
-                            # 如果循环组为完成循环次数，step_num取余继续继续测试
-                            elif group_current_cycle_count < int(self.group_loop_count[int(group_current_num) - 1]):
-                                print('Group%s循环%s' % (group_current_num, group_current_cycle_count))
+                if self.test_status:
+                    step_num += 1
+                    if step_num > len(self.cycle_rule) - 1:  # step计数溢出处理
+                        # 1.若该步骤未分组，直接结束测试
+                        # 2.若循环组已完成循环次数，结束测试
+                        if (self.cycle_rule[step_num - 1][1] == '' or
+                                group_current_cycle_count >= int(
+                                    self.group_loop_count[int(group_current_num) - 1])):
+                            break
+                        # 如果循环组为完成循环次数，step_num取余继续继续测试
+                        elif group_current_cycle_count < int(self.group_loop_count[int(group_current_num) - 1]):
+                            group_current_cycle_count += 1
+                            step_num = step_num % len(self.cycle_rule)
+
+                    else:  # step计数未溢出
+                        # 1. 判断该step是否有Group编号
+                        # 2. 判断该Group循环是否完成
+                        if self.cycle_rule[step_num][1] != group_current_num:
+                            if (group_current_num != '' and
+                                    group_current_cycle_count < int(
+                                        self.group_loop_count[int(group_current_num) - 1])):
                                 group_current_cycle_count += 1
-                                step_num = step_num % len(self.cycle_rule)
-
-                        else:  # step计数未溢出
-                            # 1. 判断该step是否有Group编号
-                            # 2. 判断该Group循环是否完成
-                            if self.cycle_rule[step_num][1] != group_current_num:
-                                if (group_current_num != '' and
-                                        group_current_cycle_count < int(self.group_loop_count[int(group_current_num) - 1])):
-                                    print('Group%s循环%s' % (group_current_num, group_current_cycle_count))
-                                    group_current_cycle_count += 1
-                                else:
-                                    print('Group%s循环%s' % (group_current_num, group_current_cycle_count))
-                                    print('Group%s完成' % group_current_num)
-                                    group_current_num = self.cycle_rule[step_num][1]
-                                    group_current_cycle_count = 1
-
-                elif group_current_num == '':
-                    group_current_num = self.cycle_rule[step_num][1]
-                else:
-                    step_num = (step_num + 1) % len(self.cycle_rule)
+                            else:
+                                group_current_num = self.cycle_rule[step_num][1]
+                                group_current_cycle_count = 1
+            elif group_current_num == '':
+                group_current_num = self.cycle_rule[step_num][1]
             else:
-                step_num += 1
-
-            if step_num > len(self.cycle_rule) - 1:
-                break
-
+                step_num = (step_num + 1) % len(self.cycle_rule)
         self.test_stop()
-        print('test stop')
+
+    def test_action_start(self, action, value1, value2):
+        self.test_action_stop()
+
+        if action == 'Charge':
+            if self.dc_device.connect_flag:
+                self.dc_control('voltage', value1)
+                self.dc_control('current', value2)
+                self.dc_control('output', 'on')
+                return True
+            else:
+                return False
+        elif action == 'Discharge':
+            if self.dc_device.connect_flag:
+                self.eload_control(value1, value2)
+                if value1 == 'TCC':
+                    self.eload_control('input', 'on')
+                    self.eload_control('input', 'off')
+                    self.eload_control('input', 'on')
+                else:
+                    self.eload_control('input', 'on')
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def test_action_stop(self):
+        self.eload_control('input', 'off')
+        if self.dc_init_mode:
+            self.dc_control('current', self.dc_init_current)
+            self.dc_control('voltage', self.dc_init_voltage)
+            self.dc_control('output', 'on')
+        else:
+            self.dc_control('output', 'off')
 
     def dc_control(self, config, value):
         if self.dc_device.connect_flag:
@@ -296,26 +367,41 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 self.dc_device.output_on()
             elif config == 'output' and value == 'off':
                 self.dc_device.output_off()
+            return True
+        else:
+            return False
 
     def eload_control(self, config, value):
         if self.eload_device.connect_flag:
-            if config == 'CC':
+            if re.search(config, 'CC', re.IGNORECASE):
                 self.eload_device.set_cc_mode(value)
-            elif config == 'CP':
+            elif re.search(config, 'CP', re.IGNORECASE):
                 self.eload_device.set_cp_mode(value)
-            elif config == 'CR':
+            elif re.search(config, 'CR', re.IGNORECASE):
                 self.eload_device.set_cr_mode(value)
-            elif config == 'TCC':
+            elif re.search(config, 'TCC', re.IGNORECASE):
                 tcc_setting = re.split('@|,|;', value)
                 self.eload_device.set_tran_cc_mode(tcc_setting[0], tcc_setting[1], tcc_setting[2], tcc_setting[3])
+            elif re.search(config, 'TCP', re.IGNORECASE):
+                tcp_setting = re.split('@|,|;', value)
+                self.eload_device.set_tran_cp_mode(tcp_setting[0], tcp_setting[1], tcp_setting[2], tcp_setting[3])
             elif config == 'input' and value == 'on':
                 self.eload_device.input_on()
             elif config == 'input' and value == 'off':
                 self.eload_device.input_off()
+            return True
+        else:
+            return False
+
+    def init_setting(self):
+        if os.path.exists('temp.ini'):
+            self.serial_control_tab.serial_init('temp.ini')
+            self.rule_tab.load_rule('temp.ini')
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     myWin = MyMainForm()
+
     myWin.show()
     sys.exit(app.exec_())

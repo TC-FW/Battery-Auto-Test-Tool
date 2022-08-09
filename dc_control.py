@@ -35,6 +35,7 @@ class HengHuiDC:
             if self.check_float(read_back_current) and float(read_back_current) == float(current):
                 return True
             elif error_count <= 5:
+                error_count += 1
                 continue
             else:
                 return False
@@ -49,6 +50,7 @@ class HengHuiDC:
             if self.check_float(read_back_voltage) and float(read_back_voltage) == float(voltage):
                 return True
             elif error_count <= 5:
+                error_count += 1
                 continue
             else:
                 return False

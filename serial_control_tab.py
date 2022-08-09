@@ -1,5 +1,6 @@
+import os.path
 import re
-
+import configparser
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow
 from homepage import ui_serial_control_tab
@@ -32,6 +33,8 @@ class SerialControlTab(QMainWindow, ui_serial_control_tab.Ui_Form):
             lambda: self.output_dc_control_signal.emit('output', 'on'))
         self.dc_output_off_button.clicked.connect(
             lambda: self.output_dc_control_signal.emit('output', 'off'))
+        self.dc_voltage_input.returnPressed.connect(lambda: self.dc_voltage_set_button.click())
+        self.dc_current_input.returnPressed.connect(lambda: self.dc_current_set_button.click())
 
         self.eload_mode_set_button.clicked.connect(
             lambda: self.output_eload_control_signal.emit(self.eload_mode_combobox.currentText(),
@@ -40,6 +43,7 @@ class SerialControlTab(QMainWindow, ui_serial_control_tab.Ui_Form):
             lambda: self.output_eload_control_signal.emit('input', 'on'))
         self.eload_input_off_button.clicked.connect(
             lambda: self.output_eload_control_signal.emit('input', 'off'))
+        self.eload_mode_value_input.returnPressed.connect(lambda : self.eload_mode_set_button.click())
 
         self.input_serial_list_signal.connect(self.serial_device_update)
 
@@ -63,14 +67,43 @@ class SerialControlTab(QMainWindow, ui_serial_control_tab.Ui_Form):
             dc_connect_com = re.match(r'(.*?) #', str(self.dc_serial_combobox.currentText())).group(1)
         else:
             dc_connect_com = ''
-        connect_bps = self.dc_baud_combobox.currentText()
-        dc_serial_config = str(dc_connect_com) + ',' + str(connect_bps)
+        dc_connect_bps = self.dc_baud_combobox.currentText()
+        dc_serial_config = str(dc_connect_com) + ',' + str(dc_connect_bps)
 
         if self.eload_serial_combobox.currentText():
             eload_connect_com = re.match(r'(.*?) #', str(self.eload_serial_combobox.currentText())).group(1)
         else:
             eload_connect_com = ''
-        connect_bps = self.eload_baud_combobox.currentText()
-        eload_serial_config = str(eload_connect_com) + ',' + str(connect_bps)
+        eload_connect_bps = self.eload_baud_combobox.currentText()
+        eload_serial_config = str(eload_connect_com) + ',' + str(eload_connect_bps)
+
+        if not os.path.exists('temp.ini'):
+            file = open('temp.ini', 'w', encoding='utf-8')
+            file.close()
+        config = configparser.ConfigParser()
+        config.read("temp.ini", encoding="utf-8")
+        if not config.has_section("DC Serial"):
+            config.add_section("DC Serial")
+        if not config.has_section("Eload Serial"):
+            config.add_section("Eload Serial")
+        config.set('DC Serial', 'Port', self.dc_serial_combobox.currentText())
+        config.set('DC Serial', 'Baud', str(dc_connect_bps))
+        config.set('Eload Serial', 'Port', self.eload_serial_combobox.currentText())
+        config.set('Eload Serial', 'Baud', str(eload_connect_bps))
+        config.write(open('temp.ini', 'w', encoding='utf-8'))
 
         self.output_serial_connect_signal.emit(dc_serial_config, eload_serial_config)
+
+    def serial_init(self, file_path):
+        try:
+            config = configparser.ConfigParser()
+            config.read(file_path, encoding="utf-8")
+            if config.has_section("DC Serial"):
+                self.dc_serial_combobox.setCurrentText(config.get('DC Serial', 'port'))
+                self.dc_baud_combobox.setCurrentText(config.get('DC Serial', 'baud'))
+            if config.has_section("Eload Serial"):
+                self.eload_serial_combobox.setCurrentText(config.get('Eload Serial', 'port'))
+                self.eload_baud_combobox.setCurrentText(config.get('Eload Serial', 'baud'))
+            return True
+        except:
+            return False
