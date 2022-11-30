@@ -3,7 +3,6 @@ import re
 import sys
 import threading
 import time
-import configparser
 import serial
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PyQt5 import QtCore
@@ -47,6 +46,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.group_loop_count = []
         self.log_file_path = ''
         self.cycle_rule = None
+        self.action_stop_flag = True
 
         self.dc_init_mode = False
         self.dc_init_current = ''
@@ -182,6 +182,14 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         if not self.log_file_path or not self.register_line:
             QMessageBox.warning(self, 'Warning', '请先切换到"规则设定"页面，按OK键保存设置。')
             return False
+        for i in self.cycle_rule:
+            if re.search(str(i), 'Charge', re.IGNORECASE) and not self.dc_device.connect_flag:
+                QMessageBox.warning(self, 'Warning', '未设置DC串口参数')
+                return False
+            if re.search(str(i), 'Discharge', re.IGNORECASE) and not self.eload_device.connect_flag:
+                QMessageBox.warning(self, 'Warning', '未设置Eload串口参数')
+                return False
+
         self.test_status = True
         log_data_update = threading.Thread(target=self.log_data_update, daemon=True)
         log_data_update.start()
@@ -193,13 +201,14 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
 
     def test_stop(self):
         self.test_status = False
+        self.test_action_stop()
         self.output_test_status_signal.emit(False)
 
     def log_data_update(self):
         log_file = open(self.log_file_path, 'rb')
         line = []
         while self.test_status:
-            offset = -100
+            offset = -200
             while self.test_status:
                 try:
                     log_file.seek(offset, 2)
@@ -210,7 +219,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                         offset *= 2
                         time.sleep(0.3)
                 except:
-                    time.sleep(0.3)
+                    offset = -200
                     continue
             if self.test_status:
                 self.register_data = re.split(';|,|\t|\n', line[-1].decode('utf-8'))
@@ -239,7 +248,9 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
 
                     # 充放电命令
                     self.test_action_start(self.cycle_rule[step_num][2], self.cycle_rule[step_num][8],
-                                           self.cycle_rule[step_num][9])
+                                           self.cycle_rule[step_num][9], self.action_stop_flag)
+                    self.action_stop_flag = True
+
                     # 等待停止条件触发
                     limit_time_begin = time.time()
                     limit_timeout_flag = False
@@ -255,7 +266,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                                 limit_timeout_flag = True
                                 break
 
-                        if len(self.register_data) == len(self.register_line):
+                        if (len(self.register_line) - 5) < len(self.register_data) <= len(self.register_line):
                             temp_register_value = self.register_data[
                                 self.register_line.index(self.cycle_rule[step_num][3])]
                             if temp_register_value != '' and judge.judge(temp_register_value,
@@ -277,6 +288,8 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                     # 充放电停止
                     if self.cycle_rule[step_num][-1] != 'dontstop':
                         self.test_action_stop()
+                    else:
+                        self.action_stop_flag = False
 
                     if limit_timeout_flag:
                         break
@@ -322,8 +335,9 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 step_num = (step_num + 1) % len(self.cycle_rule)
         self.test_stop()
 
-    def test_action_start(self, action, value1, value2):
-        self.test_action_stop()
+    def test_action_start(self, action, value1, value2, stop=True):
+        if stop:
+            self.test_action_stop()
 
         if action == 'Charge':
             if self.dc_device.connect_flag:
@@ -348,7 +362,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         else:
             return False
 
-    def test_action_stop(self):
+    def test_action_stop(self, stop=True):
         self.eload_control('input', 'off')
         if self.dc_init_mode:
             self.dc_control('current', self.dc_init_current)

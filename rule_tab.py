@@ -2,7 +2,8 @@ import os
 import re
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QMainWindow, QComboBox, QCheckBox, QHeaderView, QFileDialog, QMessageBox, QTableWidgetItem
+from PyQt5.QtWidgets import QMainWindow, QComboBox, QCheckBox, QHeaderView, QFileDialog, QTableWidgetItem, QMenu, \
+    QAbstractItemView
 import configparser
 from homepage import ui_rule_tab
 
@@ -22,16 +23,54 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
         self.save_setting_button.clicked.connect(self.save_rule_file_select)
         self.load_setting_button.clicked.connect(self.load_rule_file_select)
 
+
+        self.rule_table.setDragEnabled(True)
+        self.rule_table.setAcceptDrops(True)
+        self.rule_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+
         self.register_list = []
 
         self.file_select_input.textChanged.connect(self.register_list_update)
         self.log_first_value_combox.currentTextChanged.connect(self.register_list_update)
 
-    def add_rule(self):
-        self.rule_table.setRowCount(self.rule_table.rowCount() + 1)
-        comBox1 = QComboBox()
-        comBox1.addItems(['Charge', 'Discharge', 'None'])
-        comBox1.setEditable(True)
+        self.rule_table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.rule_table.customContextMenuRequested.connect(self.tableWidget_VTest_menu)
+
+    def table_drop(self, DropEvent):
+        row = self.rule_table.rowAt(DropEvent.pos().y())  # 获取鼠标拖动至TableWidget的行
+        column = self.rule_table.columnAt(DropEvent.pos().x())  # 获取鼠标拖动至TableWidget的列
+        source_Widget = DropEvent.source()  # 获取拖入元素的父组件
+        items = source_Widget.selectedItems()  # 获取ListWidget中已选择的item
+
+    def tableWidget_VTest_menu(self, pos):
+        """
+        :return:
+        """
+        row_num = -1
+        for i in self.rule_table.selectionModel().selection().indexes():
+            row_num = i.row()
+
+        menu = QMenu()  # 实例化菜单
+        item1 = menu.addAction(u"插入规则")
+        item2 = menu.addAction(u"删除规则")
+        action = menu.exec_(self.rule_table.mapToGlobal(pos))
+
+        if action == item1:
+            self.add_rule(row_num)
+        elif action == item2:
+            self.del_rule(row_num)
+
+    def add_rule(self, select_num=-1):
+        if select_num is not False and select_num is not None and select_num >= 0:
+            row_num = select_num
+            self.rule_table.insertRow(row_num)
+        else:
+            self.rule_table.setRowCount(self.rule_table.rowCount() + 1)
+            row_num = self.rule_table.rowCount() - 1
+
+        combox1 = QComboBox()
+        combox1.addItems(['Charge', 'Discharge', 'None'])
+        combox1.setEditable(True)
 
         checkbox = QCheckBox()
         checkbox.setChecked(True)
@@ -40,20 +79,25 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
         register_combox.addItems(self.register_list)
         register_combox.setEditable(True)
 
-        comBox2 = QComboBox()
-        comBox2.addItems(['>', '<', '=', '>=', '<=', 'Set', 'Reset'])
-        comBox2.setEditable(True)
+        combox2 = QComboBox()
+        combox2.addItems(['>', '<', '=', '>=', '<=', 'Set', 'Reset'])
+        combox2.setEditable(True)
 
-        self.rule_table.setCellWidget(self.rule_table.rowCount() - 1, 0, checkbox)
-        self.rule_table.setCellWidget(self.rule_table.rowCount() - 1, 2, comBox1)
-        self.rule_table.setCellWidget(self.rule_table.rowCount() - 1, 3, register_combox)
-        self.rule_table.setCellWidget(self.rule_table.rowCount() - 1, 4, comBox2)
-        self.rule_table.setItem(self.rule_table.rowCount() - 1, 6, QTableWidgetItem('1800'))
-        self.rule_table.setItem(self.rule_table.rowCount() - 1, 7, QTableWidgetItem('54000'))
+        self.rule_table.setCellWidget(row_num, 0, checkbox)
+        self.rule_table.setCellWidget(row_num, 2, combox1)
+        self.rule_table.setCellWidget(row_num, 3, register_combox)
+        self.rule_table.setCellWidget(row_num, 4, combox2)
+        self.rule_table.setItem(row_num, 6, QTableWidgetItem('1800'))
+        self.rule_table.setItem(row_num, 7, QTableWidgetItem('54000'))
 
-    def del_rule(self):
+    def del_rule(self, select_num=None):
+        if select_num is not False and select_num is not None and select_num >= 0:
+            row_num = select_num
+        else:
+            row_num = self.rule_table.rowCount() - 1
+
         if self.rule_table.rowCount() > 0:
-            self.rule_table.setRowCount(self.rule_table.rowCount() - 1)
+            self.rule_table.removeRow(row_num)
 
     def rule_set(self):
         temp_rule = ''
