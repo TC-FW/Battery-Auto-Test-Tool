@@ -268,7 +268,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
 
                         if (len(self.register_line) - 5) < len(self.register_data) <= len(
                                 self.register_line):  # 检查新数据行是否有数据缺失
-                            if 'Software_Time' in self.cycle_rule[step_num][3]:
+                            if 'Software Time' in self.cycle_rule[step_num][3]:
                                 temp_register_value = time.time() - software_begin_time
                             else:
                                 temp_register_value = self.register_data[
