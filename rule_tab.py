@@ -23,42 +23,59 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
         self.save_setting_button.clicked.connect(self.save_rule_file_select)
         self.load_setting_button.clicked.connect(self.load_rule_file_select)
 
-
         self.rule_table.setDragEnabled(True)
         self.rule_table.setAcceptDrops(True)
         self.rule_table.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.register_list = []
+        self.copy_row_num = None
 
         self.file_select_input.textChanged.connect(self.register_list_update)
         self.log_first_value_combox.currentTextChanged.connect(self.register_list_update)
 
         self.rule_table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.rule_table.customContextMenuRequested.connect(self.tableWidget_VTest_menu)
+        self.rule_table.customContextMenuRequested.connect(self.context_menu)
 
-    def table_drop(self, DropEvent):
-        row = self.rule_table.rowAt(DropEvent.pos().y())  # 获取鼠标拖动至TableWidget的行
-        column = self.rule_table.columnAt(DropEvent.pos().x())  # 获取鼠标拖动至TableWidget的列
-        source_Widget = DropEvent.source()  # 获取拖入元素的父组件
-        items = source_Widget.selectedItems()  # 获取ListWidget中已选择的item
-
-    def tableWidget_VTest_menu(self, pos):
-        """
-        :return:
-        """
+    def context_menu(self, pos):
         row_num = -1
         for i in self.rule_table.selectionModel().selection().indexes():
             row_num = i.row()
-
         menu = QMenu()  # 实例化菜单
         item1 = menu.addAction(u"插入规则")
         item2 = menu.addAction(u"删除规则")
+        item3 = menu.addAction(u"复制规则")
+        item4 = menu.addAction(u"插入复制规则")
+
+        if self.copy_row_num is not None:
+            item4.setEnabled(True)
+        else:
+            item4.setEnabled(False)
+
         action = menu.exec_(self.rule_table.mapToGlobal(pos))
 
         if action == item1:
             self.add_rule(row_num)
         elif action == item2:
             self.del_rule(row_num)
+        elif action == item3:
+            self.copy_row_num = row_num
+        elif action == item4:
+            if row_num >= 0:
+                if self.copy_row_num >= row_num:
+                    self.copy_row_num += 1
+            elif row_num == -1:
+                row_num = self.rule_table.rowCount()
+            self.add_rule(row_num)
+            for i in range(self.rule_table.columnCount()):
+                if i == 0:
+                    if self.rule_table.cellWidget(self.copy_row_num, i).isChecked:
+                        self.rule_table.cellWidget(row_num, i).setChecked(True)
+                    else:
+                        self.rule_table.cellWidget(row_num, i).setChecked(False)
+                elif i == 2 or i == 3 or i == 4:
+                    self.rule_table.cellWidget(row_num, i).setCurrentText(self.rule_table.cellWidget(self.copy_row_num, i).currentText())
+                elif self.rule_table.item(self.copy_row_num, i) is not None:
+                    self.rule_table.setItem(row_num, i, QTableWidgetItem(self.rule_table.item(self.copy_row_num, i).text()))
 
     def add_rule(self, select_num=-1):
         if select_num is not False and select_num is not None and select_num >= 0:
@@ -132,13 +149,15 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
         导出文件夹选择
         :return: None
         """
-        file_name = QFileDialog.getOpenFileName(self, "选取文件", os.getcwd(), "Log Files(*.log;*.csv);;All Files(*)")
+        file_path = self.get_init_path('log path')
+        file_name = QFileDialog.getOpenFileName(self, "选取文件", file_path, "Log Files(*.log;*.csv);;All Files(*)")
         if file_name[0]:
             self.file_select_input.setText(file_name[0])
             if file_name[0][-4:] == '.log':
                 self.log_first_value_combox.setCurrentText('Sample')
             elif file_name[0][-4:] == '.csv':
                 self.log_first_value_combox.setCurrentText('Time')
+            self.auto_save_path('temp.ini', 'log path', file_name[0][:file_name[0].rfind('/') + 1])
 
     def register_list_update(self):
         if not os.path.exists(self.file_select_input.text()):
@@ -157,6 +176,7 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
                 return False
 
         self.register_list = re.split(';|,|\t|\n', line)
+        self.register_list.append('Software Time')
 
         for i in range(self.rule_table.rowCount()):
             temp_value = self.rule_table.cellWidget(i, 3).currentText()
@@ -165,17 +185,21 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
             self.rule_table.cellWidget(i, 3).setCurrentText(temp_value)
 
     def save_rule_file_select(self):
-        file_name = QFileDialog.getSaveFileName(self, "选取文件", '-LearningSetting', "INI Files(*.ini)")
+        file_path = self.get_init_path('rule path')
+        file_name = QFileDialog.getSaveFileName(self, "选取文件", file_path + '/' + '-LearningSetting', "INI Files(*.ini)")
         if file_name[0]:
             if not os.path.exists(file_name[0]):
                 file = open(file_name[0], 'w', encoding='utf-8')
                 file.close()
             self.save_rule(file_name[0])
+            self.auto_save_path('temp.ini', 'rule path', file_name[0][:file_name[0].rfind('/') + 1])
 
     def load_rule_file_select(self):
-        file_name = QFileDialog.getOpenFileName(self, "选取文件", os.getcwd(), "INI Files(*.ini)")
+        file_path = self.get_init_path('rule path')
+        file_name = QFileDialog.getOpenFileName(self, "选取文件", file_path, "INI Files(*.ini)")
         if file_name[0]:
             self.load_rule(file_name[0])
+            self.auto_save_path('temp.ini', 'rule path', file_name[0][:file_name[0].rfind('/') + 1])
 
     def save_rule(self, file_path):
         config = configparser.ConfigParser()
@@ -240,3 +264,31 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
 
             except:
                 return False
+
+    @staticmethod
+    def auto_save_path(ini_file_path, path_type, path):
+        if not os.path.exists(ini_file_path):
+            file = open(ini_file_path, 'w', encoding='utf-8')
+            file.close()
+
+        config = configparser.ConfigParser()
+        config.read(ini_file_path, encoding="utf-8")
+
+        if not config.has_section("Path"):
+            config.add_section("Path")
+        config.set("Path", path_type, path)
+        config.write(open(ini_file_path, 'w', encoding='utf-8'))
+
+    @staticmethod
+    def get_init_path(path_type):
+        if os.path.exists('temp.ini'):
+            config = configparser.ConfigParser()
+            config.read('./temp.ini', encoding="utf-8")
+
+            if config.has_section("Path") and path_type in config.options("Path") and config.get("Path", path_type):
+                file_path = config.get("Path", path_type)
+            else:
+                file_path = os.getcwd()
+        else:
+            file_path = os.getcwd()
+        return file_path

@@ -22,9 +22,6 @@ class HengHuiDC:
                 break
         return temp
 
-    def write_info(self, string):
-        self.ser.write((string + '\n').encode('utf-8'))
-
     def set_current(self, current):
         error_count = 0
         while True:

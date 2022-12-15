@@ -53,7 +53,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.dc_init_voltage = ''
 
         self.setupUi(self)
-        self.setWindowTitle("Battery Auto Testing Tool Beta V1.0")
+        self.setWindowTitle("Battery Auto Testing Tool V1.0")
         self.main_tab = main_tab.MainTab(self, self.window_tab_1)
         self.rule_tab = rule_tab.RuleTab(self, self.window_tab_2)
         self.serial_control_tab = serial_control_tab.SerialControlTab(self, self.window_tab_3)
@@ -153,7 +153,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 temp_cycle_rule.append(i.split(','))
 
         for i in temp_cycle_rule:
-            if i[3] not in re.split(';|,|\t|\n', line):
+            if i[3] not in re.split(';|,|\t|\n', line) and i[3] != 'Software Time':
                 QMessageBox.warning(self, 'Warning', 'Log文件中未找到\'%s\'，请检查输入是否正确' % i[3])
                 return
 
@@ -254,24 +254,27 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                     # 等待停止条件触发
                     limit_time_begin = time.time()
                     limit_timeout_flag = False
+                    software_begin_time = time.time()
                     while self.test_status:
-                        if self.cycle_rule[step_num][7] != '':
-                            current_limit_time = time.time() - limit_time_begin
-                            if current_limit_time < int(self.cycle_rule[step_num][7]):
-                                self.output_test_status_table_signal.emit(5, '%.2f / %s' % (
-                                    current_limit_time, self.cycle_rule[step_num][7]), False)
-                            else:
-                                self.output_test_status_table_signal.emit(5, '%.2f / %s (Timeout)' % (
-                                    current_limit_time, self.cycle_rule[step_num][7]), False)
-                                limit_timeout_flag = True
-                                break
+                        current_limit_time = time.time() - limit_time_begin
+                        if current_limit_time < int(self.cycle_rule[step_num][7]):
+                            self.output_test_status_table_signal.emit(5, '%.2f / %s' % (
+                                current_limit_time, self.cycle_rule[step_num][7]), False)
+                        else:
+                            self.output_test_status_table_signal.emit(5, '%.2f / %s (Timeout)' % (
+                                current_limit_time, self.cycle_rule[step_num][7]), False)
+                            limit_timeout_flag = True
+                            break
 
-                        if (len(self.register_line) - 5) < len(self.register_data) <= len(self.register_line):
-                            temp_register_value = self.register_data[
-                                self.register_line.index(self.cycle_rule[step_num][3])]
-                            if temp_register_value != '' and judge.judge(temp_register_value,
-                                                                         self.cycle_rule[step_num][5],
-                                                                         self.cycle_rule[step_num][4]):
+                        if (len(self.register_line) - 5) < len(self.register_data) <= len(
+                                self.register_line):  # 检查新数据行是否有数据缺失
+                            if 'Software_Time' in self.cycle_rule[step_num][3]:
+                                temp_register_value = time.time() - software_begin_time
+                            else:
+                                temp_register_value = self.register_data[
+                                    self.register_line.index(self.cycle_rule[step_num][3])]
+                            if judge.judge(temp_register_value, self.cycle_rule[step_num][5],
+                                           self.cycle_rule[step_num][4]):
                                 self.output_test_status_table_signal.emit(4, '%s %s %s 停止条件触发' % (
                                     temp_register_value, self.cycle_rule[step_num][4], self.cycle_rule[step_num][5]),
                                                                           False)
@@ -310,8 +313,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                         # 1.若该步骤未分组，直接结束测试
                         # 2.若循环组已完成循环次数，结束测试
                         if (self.cycle_rule[step_num - 1][1] == '' or
-                                group_current_cycle_count >= int(
-                                    self.group_loop_count[int(group_current_num) - 1])):
+                                group_current_cycle_count >= int(self.group_loop_count[int(group_current_num) - 1])):
                             break
                         # 如果循环组为完成循环次数，step_num取余继续继续测试
                         elif group_current_cycle_count < int(self.group_loop_count[int(group_current_num) - 1]):

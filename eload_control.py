@@ -26,9 +26,6 @@ class HengHuiEload:
                 break
         return temp
 
-    def write_info(self, string):
-        self.ser.write((string + '\n').encode('utf-8'))
-
     def set_cc_mode(self, current):
         error_count = 0
         while self.control_flag:
