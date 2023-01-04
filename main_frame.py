@@ -53,7 +53,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.dc_init_voltage = ''
 
         self.setupUi(self)
-        self.setWindowTitle("Battery Auto Testing Tool V1.0")
+        self.setWindowTitle("Battery Auto Testing Tool V1.1")
         self.main_tab = main_tab.MainTab(self, self.window_tab_1)
         self.rule_tab = rule_tab.RuleTab(self, self.window_tab_2)
         self.serial_control_tab = serial_control_tab.SerialControlTab(self, self.window_tab_3)
@@ -201,7 +201,6 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
 
     def test_stop(self):
         self.test_status = False
-        self.test_action_stop()
         self.output_test_status_signal.emit(False)
 
     def log_data_update(self):
@@ -250,7 +249,6 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                     self.test_action_start(self.cycle_rule[step_num][2], self.cycle_rule[step_num][8],
                                            self.cycle_rule[step_num][9], self.action_stop_flag)
                     self.action_stop_flag = True
-
                     # 等待停止条件触发
                     limit_time_begin = time.time()
                     limit_timeout_flag = False
@@ -289,7 +287,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                         time.sleep(0.1)
 
                     # 充放电停止
-                    if self.cycle_rule[step_num][-1] != 'dontstop':
+                    if self.cycle_rule[step_num][-1] != 'dontstop' and self.test_status:
                         self.test_action_stop()
                     else:
                         self.action_stop_flag = False
@@ -361,10 +359,12 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 return True
             else:
                 return False
+        elif action == 'None':
+            return True
         else:
             return False
 
-    def test_action_stop(self, stop=True):
+    def test_action_stop(self):
         self.eload_control('input', 'off')
         if self.dc_init_mode:
             self.dc_control('current', self.dc_init_current)
