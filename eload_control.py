@@ -1,3 +1,4 @@
+import re
 import threading
 import time
 
@@ -22,7 +23,7 @@ class HengHuiEload:
             if self.ser.in_waiting:
                 string = self.ser.read_all().decode('utf-8')
                 temp += string
-            if (time.time() - time_start) > 0.5:
+            if (time.time() - time_start) > 0.05:
                 break
         return temp
 
@@ -192,6 +193,76 @@ class HengHuiEload:
             else:
                 self.control_flag = False
                 return False
+
+    def get_input_state(self):
+        error_count = 0
+        while self.control_flag:
+            continue
+        while True:
+            self.control_flag = True
+            self.ser.write('INPUT?\n'.encode('utf-8'))
+            value = self.serial_read_message().replace('\n', '')
+            value = value if value else 'None'
+            self.control_flag = False
+            return value
+
+    def get_setting_mode(self):
+        while self.control_flag:
+            continue
+        self.control_flag = True
+        self.ser.write('Mode?\n'.encode('utf-8'))
+        mode = self.serial_read_message().replace('\n', '')
+        self.ser.write('Tran?\n'.encode('utf-8'))
+        tran_mode = self.serial_read_message().replace('\n', '')
+
+        if re.search('on', tran_mode, re.I):
+            self.ser.write(':CURR:LLEV?\n'.encode('utf-8'))
+            read_back_power_l = self.serial_read_message().replace('\n', '')
+            self.ser.write(':TRAN:LTIM?\n'.encode('utf-8'))
+            read_back_time_l = self.serial_read_message().replace('\n', '')
+            self.ser.write(':CURR:HLEV?\n'.encode('utf-8'))
+            read_back_power_h = self.serial_read_message().replace('\n', '')
+            self.ser.write(':TRAN:HTIM?\n'.encode('utf-8'))
+            read_back_time_h = self.serial_read_message().replace('\n', '')
+            self.control_flag = False
+            return "{0},{1},{2},{3},{4}".format('TRAN', read_back_power_l, read_back_time_l, read_back_power_h, read_back_time_h)
+        else:
+            if re.search('cc', mode, re.I):
+                self.ser.write('curr?\n'.encode('utf-8'))
+                value = self.serial_read_message().replace('\n', '')
+                value = (value + 'A') if value else 'None'
+            elif re.search('cp', mode, re.I):
+                self.ser.write('POW?\n'.encode('utf-8'))
+                value = self.serial_read_message().replace('\n', '')
+                value = (value + 'W') if value else 'None'
+            elif re.search('cr', mode, re.I):
+                self.ser.write('RES?\n'.encode('utf-8'))
+                value = self.serial_read_message().replace('\n', '')
+                value = (value + 'Ω') if value else 'None'
+            else:
+                return "None,None"
+            self.control_flag = False
+            return "{0},{1}".format(mode, value)
+
+    def get_measure_current(self):
+        while self.control_flag:
+            continue
+        self.control_flag = True
+        self.ser.write(':MEAS:CURR?\n'.encode('utf-8'))
+        current = self.serial_read_message().replace('\n', '')
+        current = (current + 'A') if current else 'None'
+        self.control_flag = False
+        return current
+
+    def get_measure_voltage(self):
+        while self.control_flag:
+            continue
+        self.control_flag = True
+        self.ser.write(':MEAS:VOLT?\n'.encode('utf-8'))
+        voltage = self.serial_read_message().replace('\n', '')
+        voltage = (voltage + 'V') if voltage else 'None'
+        self.control_flag = False
+        return voltage
 
     @staticmethod
     def check_float(string):

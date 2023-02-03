@@ -2,6 +2,7 @@ import os
 import re
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QComboBox, QCheckBox, QHeaderView, QFileDialog, QTableWidgetItem, QMenu, \
     QAbstractItemView
 import configparser
@@ -14,7 +15,8 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
     def __init__(self, parent, tab):
         super(RuleTab, self).__init__(parent)
         self.setupUi(tab)
-        self.rule_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # self.rule_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.rule_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.enter_button.clicked.connect(self.rule_set)
         self.add_rule_button.clicked.connect(self.add_rule)
@@ -26,8 +28,7 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
         self.rule_table.setDragEnabled(True)
         self.rule_table.setAcceptDrops(True)
         self.rule_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-
-        self.register_list = []
+        self.register_list = ['Software Time']
         self.copy_row_num = None
 
         self.file_select_input.textChanged.connect(self.register_list_update)
@@ -95,6 +96,8 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
         register_combox = QComboBox()
         register_combox.addItems(self.register_list)
         register_combox.setEditable(True)
+        register_combox.view().setTextElideMode(Qt.ElideNone)
+        register_combox.view().setFixedWidth(150)
 
         combox2 = QComboBox()
         combox2.addItems(['>', '<', '=', '>=', '<=', 'Set', 'Reset'])
@@ -160,6 +163,10 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
             self.auto_save_path('temp.ini', 'log path', file_name[0][:file_name[0].rfind('/') + 1])
 
     def register_list_update(self):
+        """
+        log数据寄存器名称列表更新
+        :return: None
+        """
         if not os.path.exists(self.file_select_input.text()):
             return
 
@@ -175,9 +182,10 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
             else:
                 return False
 
-        self.register_list = re.split(';|,|\t|\n', line)
+        self.register_list = re.split(';|,|\t|\n', line.replace('\n', ''))
         self.register_list.append('Software Time')
 
+        # 更新规则内Register Combobox的数据
         for i in range(self.rule_table.rowCount()):
             temp_value = self.rule_table.cellWidget(i, 3).currentText()
             self.rule_table.cellWidget(i, 3).clear()

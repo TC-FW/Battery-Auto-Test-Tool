@@ -4,7 +4,7 @@ import sys
 import threading
 import time
 import serial
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QStyleFactory
 from PyQt5 import QtCore
 import serial.tools.list_ports
 
@@ -32,21 +32,25 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
     input_serial_connect_signal = QtCore.pyqtSignal(str, str)
     input_dc_control_signal = QtCore.pyqtSignal(str, str)
     input_eload_control_signal = QtCore.pyqtSignal(str, str)
+    input_device_scan_signal = QtCore.pyqtSignal(bool)
+    input_monitor_register_num_signal = QtCore.pyqtSignal(bool, int)
 
     output_register_name_signal = QtCore.pyqtSignal(str)
     output_register_value_signal = QtCore.pyqtSignal(str)
     output_test_status_signal = QtCore.pyqtSignal(bool)
     output_test_status_table_signal = QtCore.pyqtSignal(int, str, bool)
     output_serial_list_signal = QtCore.pyqtSignal(str, str)
+    output_monitor_register_signal = QtCore.pyqtSignal(str, str)
 
     def __init__(self, parent=None):
         super(MyMainForm, self).__init__(parent)
         self.register_data = []
         self.register_line = []
         self.group_loop_count = []
+        self.monitor_register_list = []
         self.log_file_path = ''
         self.cycle_rule = None
-        self.action_stop_flag = True
+        self.device_init_flag = True
 
         self.dc_init_mode = False
         self.dc_init_current = ''
@@ -61,10 +65,20 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.dc_device = dc_control.HengHuiDC()
         self.eload_device = eload_control.HengHuiEload()
 
+        self.device_data_scan_flag = False
+        self.dc_data_scan_thread = threading.Thread
+        self.eload_data_scan_thread = threading.Thread
+
         self.test_status = False
+        self.log_data_update_thread = threading.Thread
+        self.test_step_thread = threading.Thread
 
         self.main_tab.output_test_start_signal.connect(self.input_test_start_signal)
         self.main_tab.output_test_stop_signal.connect(self.input_test_stop_signal)
+        self.main_tab.output_device_scan_signal.connect(self.input_device_scan_signal)
+        self.main_tab.output_dc_control_signal.connect(self.input_dc_control_signal)
+        self.main_tab.output_eload_control_signal.connect(self.input_eload_control_signal)
+        self.main_tab.output_monitor_register_num_signal.connect(self.input_monitor_register_num_signal)
         self.rule_tab.output_rule_signal.connect(self.input_rule_signal)
         self.serial_control_tab.output_serial_scan_signal.connect(self.input_serial_scan_signal)
         self.serial_control_tab.output_serial_connect_signal.connect(self.input_serial_connect_signal)
@@ -75,6 +89,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.output_register_value_signal.connect(self.main_tab.input_register_value_signal)
         self.output_test_status_signal.connect(self.main_tab.input_test_status_signal)
         self.output_test_status_table_signal.connect(self.main_tab.input_test_status_table_signal)
+        self.output_monitor_register_signal.connect(self.main_tab.input_monitor_register_signal)
         self.output_serial_list_signal.connect(self.serial_control_tab.input_serial_list_signal)
 
         self.input_rule_signal.connect(self.rule_process)
@@ -84,6 +99,10 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.input_serial_connect_signal.connect(self.serial_connect)
         self.input_dc_control_signal.connect(self.dc_control)
         self.input_eload_control_signal.connect(self.eload_control)
+        self.input_device_scan_signal.connect(self.device_data_scan_flag_change)
+        self.input_monitor_register_num_signal.connect(self.monitor_register_update)
+
+        self.setStyleSheet("font-size: 9pt; font-family: 'Microsoft YaHei UI';")
 
         self.init_setting()
 
@@ -97,6 +116,9 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
             return_device_list += i[0] + ' #' + i[1] + ','
         self.output_serial_list_signal.emit(device, return_device_list[:-1])
 
+    def device_data_scan_flag_change(self, flag):
+        self.device_data_scan_flag = flag
+
     def serial_connect(self, dc_serial_config, eload_serial_config):
         dc_config = dc_serial_config.split(',')
         eload_config = eload_serial_config.split(',')
@@ -105,6 +127,8 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
             self.dc_device.serial_disconnect()
             try:
                 self.dc_device.device_connect(dc_config[0], dc_config[1], stopbits=2)
+                self.dc_data_scan_thread = threading.Thread(target=self.dc_data_scan, daemon=True)
+                self.dc_data_scan_thread.start()
             except:
                 error_flag = True
                 QMessageBox.warning(self, 'DC连接失败', '请检查串口是否被占用')
@@ -116,15 +140,36 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
             self.eload_device.serial_disconnect()
             try:
                 self.eload_device.device_connect(eload_config[0], eload_config[1], stopbits=2)
+                self.eload_data_scan_thread = threading.Thread(target=self.eload_data_scan, daemon=True)
+                self.eload_data_scan_thread.start()
             except:
                 error_flag = True
                 QMessageBox.warning(self, 'Eload连接失败', '请检查串口是否被占用')
         else:
             error_flag = True
             QMessageBox.warning(self, 'Eload设置失败', '请检查ELoad参数是否填写完全')
-
         if not error_flag:
             QMessageBox.information(self, 'Success', '设置成功')
+
+    def dc_data_scan(self):
+        while True:
+            if self.device_data_scan_flag:
+                if self.dc_device.connect_flag:
+                    dc_output_state = self.dc_device.get_output_state()
+                    dc_mode = self.dc_device.get_setting_mode()
+                    dc_measure_current = self.dc_device.get_measure_current()
+                    dc_measure_voltage = self.dc_device.get_measure_voltage()
+            time.sleep(5)
+
+    def eload_data_scan(self):
+        while True:
+            if self.device_data_scan_flag:
+                if self.eload_device.connect_flag:
+                    eload_input_state = self.eload_device.get_input_state()
+                    eload_mode = self.eload_device.get_setting_mode()
+                    eload_measure_current = self.eload_device.get_measure_current()
+                    eload_measure_voltage = self.eload_device.get_measure_voltage()
+            time.sleep(5)
 
     def rule_process(self, log_path, log_first_value, cycle_rule, group_loop_count, dc_init_config):
         # 检查Log文件路径
@@ -164,7 +209,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 QMessageBox.warning(self, 'Warning', 'Group循环次数只能输入分隔符和数字')
                 return
 
-        self.output_register_name_signal.emit(line)
+        self.output_register_name_signal.emit(line.replace('\n', ''))
 
         self.log_file_path = log_path
         self.cycle_rule = temp_cycle_rule
@@ -191,11 +236,11 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 return False
 
         self.test_status = True
-        log_data_update = threading.Thread(target=self.log_data_update, daemon=True)
-        log_data_update.start()
+        self.log_data_update_thread = threading.Thread(target=self.log_data_update, daemon=True)
+        self.log_data_update_thread.start()
 
-        test_step = threading.Thread(target=self.test_step, daemon=True)
-        test_step.start()
+        self.test_step_thread = threading.Thread(target=self.test_step, daemon=True)
+        self.test_step_thread.start()
 
         self.output_test_status_signal.emit(True)
 
@@ -222,9 +267,21 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                     continue
             if self.test_status:
                 self.register_data = re.split(';|,|\t|\n', line[-1].decode('utf-8'))
+                self.output_register_value_signal.emit(line[-1].decode('utf-8').replace('\n', ''))
 
-                self.output_register_value_signal.emit(line[-1].decode('utf-8'))
+                monitor_register_name = ""
+                monitor_register_value = ""
+                for i in self.monitor_register_list:
+                    monitor_register_name += (self.register_line[i] + ',')
+                    monitor_register_value += (self.register_data[i] + ',')
+                self.output_monitor_register_signal.emit(monitor_register_name[:-1], monitor_register_value[:-1])
                 time.sleep(0.3)
+
+    def monitor_register_update(self, flag, num):
+        if flag:
+            self.monitor_register_list.append(num)
+        else:
+            self.monitor_register_list.remove(num)
 
     def test_step(self):
         step_num = 0
@@ -247,8 +304,8 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
 
                     # 充放电命令
                     self.test_action_start(self.cycle_rule[step_num][2], self.cycle_rule[step_num][8],
-                                           self.cycle_rule[step_num][9], self.action_stop_flag)
-                    self.action_stop_flag = True
+                                           self.cycle_rule[step_num][9], self.device_init_flag)
+                    self.device_init_flag = True
                     # 等待停止条件触发
                     limit_time_begin = time.time()
                     limit_timeout_flag = False
@@ -267,7 +324,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                         if (len(self.register_line) - 5) < len(self.register_data) <= len(
                                 self.register_line):  # 检查新数据行是否有数据缺失
                             if 'Software Time' in self.cycle_rule[step_num][3]:
-                                temp_register_value = time.time() - software_begin_time
+                                temp_register_value = round(time.time() - software_begin_time, 2)
                             else:
                                 temp_register_value = self.register_data[
                                     self.register_line.index(self.cycle_rule[step_num][3])]
@@ -287,10 +344,11 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                         time.sleep(0.1)
 
                     # 充放电停止
-                    if self.cycle_rule[step_num][-1] != 'dontstop' and self.test_status:
-                        self.test_action_stop()
+                    if self.cycle_rule[step_num][-1] == 'dontstop' and self.test_status:
+                        # 如果有dontstop标志位，下一阶段不对充放电设备进行初始化，且不关闭充放电设备
+                        self.device_init_flag = False
                     else:
-                        self.action_stop_flag = False
+                        self.test_action_stop()
 
                     if limit_timeout_flag:
                         break
@@ -335,8 +393,8 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 step_num = (step_num + 1) % len(self.cycle_rule)
         self.test_stop()
 
-    def test_action_start(self, action, value1, value2, stop=True):
-        if stop:
+    def test_action_start(self, action, value1, value2, init=True):
+        if init:
             self.test_action_stop()
 
         if action == 'Charge':
@@ -417,7 +475,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyle(QStyleFactory.create('fusion'))
     myWin = MyMainForm()
-
     myWin.show()
     sys.exit(app.exec_())
