@@ -4,8 +4,9 @@ import sys
 import threading
 import time
 import serial
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QStyleFactory
 from PyQt5 import QtCore
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QStyleFactory
+
 import serial.tools.list_ports
 
 import judge
@@ -17,7 +18,7 @@ import dc_control
 import eload_control
 
 '''class MyComboBox(QtWidgets.QComboBox):
-    clicked = QtCore.pyqtSignal()  # 创建一个信号
+    clicked = pyqtSignal()  # 创建一个信号
 
     def showPopup(self):  # 重写showPopup函数
         self.clicked.emit()  # 发送信号        
@@ -30,9 +31,12 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
     input_test_stop_signal = QtCore.pyqtSignal()
     input_serial_scan_signal = QtCore.pyqtSignal(str)
     input_serial_connect_signal = QtCore.pyqtSignal(str, str)
+    input_serial_disconnect_signal = QtCore.pyqtSignal()
     input_dc_control_signal = QtCore.pyqtSignal(str, str)
     input_eload_control_signal = QtCore.pyqtSignal(str, str)
-    input_device_scan_signal = QtCore.pyqtSignal(bool)
+    input_device_data_scan_signal = QtCore.pyqtSignal(bool)
+    input_device_data_scan_time_signal = QtCore.pyqtSignal(str)
+    input_device_data_refresh_signal = QtCore.pyqtSignal()
     input_monitor_register_num_signal = QtCore.pyqtSignal(bool, int)
 
     output_register_name_signal = QtCore.pyqtSignal(str)
@@ -41,6 +45,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
     output_test_status_table_signal = QtCore.pyqtSignal(int, str, bool)
     output_serial_list_signal = QtCore.pyqtSignal(str, str)
     output_monitor_register_signal = QtCore.pyqtSignal(str, str)
+    output_device_data_signal = QtCore.pyqtSignal(str, str)
 
     def __init__(self, parent=None):
         super(MyMainForm, self).__init__(parent)
@@ -57,7 +62,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.dc_init_voltage = ''
 
         self.setupUi(self)
-        self.setWindowTitle("Battery Auto Testing Tool V1.1")
+        self.setWindowTitle("Battery Auto Testing Tool V2.0")
         self.main_tab = main_tab.MainTab(self, self.window_tab_1)
         self.rule_tab = rule_tab.RuleTab(self, self.window_tab_2)
         self.serial_control_tab = serial_control_tab.SerialControlTab(self, self.window_tab_3)
@@ -66,6 +71,9 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.eload_device = eload_control.HengHuiEload()
 
         self.device_data_scan_flag = False
+        self.dc_data_refresh_flag = False
+        self.eload_data_refresh_flag = False
+        self.device_data_scan_time = 5
         self.dc_data_scan_thread = threading.Thread
         self.eload_data_scan_thread = threading.Thread
 
@@ -75,13 +83,16 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
 
         self.main_tab.output_test_start_signal.connect(self.input_test_start_signal)
         self.main_tab.output_test_stop_signal.connect(self.input_test_stop_signal)
-        self.main_tab.output_device_scan_signal.connect(self.input_device_scan_signal)
+        self.main_tab.output_device_data_scan_signal.connect(self.input_device_data_scan_signal)
+        self.main_tab.output_device_data_scan_time_signal.connect(self.input_device_data_scan_time_signal)
+        self.main_tab.output_device_data_refresh_signal.connect(self.device_data_refresh)
         self.main_tab.output_dc_control_signal.connect(self.input_dc_control_signal)
         self.main_tab.output_eload_control_signal.connect(self.input_eload_control_signal)
         self.main_tab.output_monitor_register_num_signal.connect(self.input_monitor_register_num_signal)
         self.rule_tab.output_rule_signal.connect(self.input_rule_signal)
         self.serial_control_tab.output_serial_scan_signal.connect(self.input_serial_scan_signal)
         self.serial_control_tab.output_serial_connect_signal.connect(self.input_serial_connect_signal)
+        self.serial_control_tab.output_serial_disconnect_signal.connect(self.input_serial_disconnect_signal)
         self.serial_control_tab.output_dc_control_signal.connect(self.input_dc_control_signal)
         self.serial_control_tab.output_eload_control_signal.connect(self.input_eload_control_signal)
 
@@ -90,6 +101,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.output_test_status_signal.connect(self.main_tab.input_test_status_signal)
         self.output_test_status_table_signal.connect(self.main_tab.input_test_status_table_signal)
         self.output_monitor_register_signal.connect(self.main_tab.input_monitor_register_signal)
+        self.output_device_data_signal.connect(self.main_tab.input_device_data_signal)
         self.output_serial_list_signal.connect(self.serial_control_tab.input_serial_list_signal)
 
         self.input_rule_signal.connect(self.rule_process)
@@ -97,10 +109,13 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         self.input_test_stop_signal.connect(self.test_stop)
         self.input_serial_scan_signal.connect(self.serial_device_scan)
         self.input_serial_connect_signal.connect(self.serial_connect)
+        self.input_serial_disconnect_signal.connect(self.serial_disconnect)
         self.input_dc_control_signal.connect(self.dc_control)
         self.input_eload_control_signal.connect(self.eload_control)
-        self.input_device_scan_signal.connect(self.device_data_scan_flag_change)
+        self.input_device_data_scan_signal.connect(self.device_data_scan_flag_change)
+        self.input_device_data_scan_time_signal.connect(self.device_data_scan_time_update)
         self.input_monitor_register_num_signal.connect(self.monitor_register_update)
+        self.input_device_data_refresh_signal.connect(self.device_data_refresh)
 
         self.setStyleSheet("font-size: 9pt; font-family: 'Microsoft YaHei UI';")
 
@@ -123,53 +138,77 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         dc_config = dc_serial_config.split(',')
         eload_config = eload_serial_config.split(',')
         error_flag = False
-        if dc_config[0] != '' and dc_config[1] != '':
-            self.dc_device.serial_disconnect()
-            try:
-                self.dc_device.device_connect(dc_config[0], dc_config[1], stopbits=2)
-                self.dc_data_scan_thread = threading.Thread(target=self.dc_data_scan, daemon=True)
-                self.dc_data_scan_thread.start()
-            except:
+        if dc_config[-1] != 'False':
+            if dc_config[0] != '' and dc_config[1] != '':
+                self.dc_device.serial_disconnect()
+                try:
+                    self.dc_device.device_connect(dc_config[0], dc_config[1], stopbits=2)
+                    self.dc_data_scan_thread = threading.Thread(target=self.dc_data_scan, daemon=True)
+                    self.dc_data_scan_thread.start()
+                except:
+                    error_flag = True
+                    QMessageBox.warning(self, 'DC连接失败', '请检查串口是否被占用')
+            else:
                 error_flag = True
-                QMessageBox.warning(self, 'DC连接失败', '请检查串口是否被占用')
-        else:
-            error_flag = True
-            QMessageBox.warning(self, 'DC设置失败', '请检查DC参数是否填写完全')
-
-        if eload_config[0] != '' and eload_config[1] != '':
-            self.eload_device.serial_disconnect()
-            try:
-                self.eload_device.device_connect(eload_config[0], eload_config[1], stopbits=2)
-                self.eload_data_scan_thread = threading.Thread(target=self.eload_data_scan, daemon=True)
-                self.eload_data_scan_thread.start()
-            except:
+                QMessageBox.warning(self, 'DC设置失败', '请检查DC参数是否填写完全')
+        if eload_config[-1] != 'False':
+            if eload_config[0] != '' and eload_config[1] != '':
+                self.eload_device.serial_disconnect()
+                try:
+                    self.eload_device.device_connect(eload_config[0], eload_config[1], stopbits=2)
+                    self.eload_data_scan_thread = threading.Thread(target=self.eload_data_scan, daemon=True)
+                    self.eload_data_scan_thread.start()
+                except:
+                    error_flag = True
+                    QMessageBox.warning(self, 'Eload连接失败', '请检查串口是否被占用')
+            else:
                 error_flag = True
-                QMessageBox.warning(self, 'Eload连接失败', '请检查串口是否被占用')
-        else:
-            error_flag = True
-            QMessageBox.warning(self, 'Eload设置失败', '请检查ELoad参数是否填写完全')
+                QMessageBox.warning(self, 'Eload设置失败', '请检查ELoad参数是否填写完全')
         if not error_flag:
             QMessageBox.information(self, 'Success', '设置成功')
 
+    def serial_disconnect(self):
+        self.dc_device.serial_disconnect()
+        self.eload_device.serial_disconnect()
+        QMessageBox.information(self, 'Success', '串口已断开连接')
+
+    def device_data_scan_time_update(self, scan_time):
+        if scan_time and scan_time.isdigit():
+            self.device_data_scan_time = int(scan_time)
+
     def dc_data_scan(self):
         while True:
-            if self.device_data_scan_flag:
+            if self.device_data_scan_flag or self.dc_data_refresh_flag:
                 if self.dc_device.connect_flag:
                     dc_output_state = self.dc_device.get_output_state()
                     dc_mode = self.dc_device.get_setting_mode()
-                    dc_measure_current = self.dc_device.get_measure_current()
                     dc_measure_voltage = self.dc_device.get_measure_voltage()
-            time.sleep(5)
+                    dc_measure_current = self.dc_device.get_measure_current()
+                    dc_measure_power = self.dc_device.get_measure_power()
+                    upload_data = "{0},{1},{2},{3},{4}".format(dc_output_state, dc_mode, dc_measure_voltage,
+                                                               dc_measure_current, dc_measure_power)
+                    self.output_device_data_signal.emit("dc", upload_data)
+                self.dc_data_refresh_flag = False
+            time.sleep(self.device_data_scan_time)
 
     def eload_data_scan(self):
         while True:
-            if self.device_data_scan_flag:
+            if self.device_data_scan_flag or self.eload_data_refresh_flag:
                 if self.eload_device.connect_flag:
                     eload_input_state = self.eload_device.get_input_state()
                     eload_mode = self.eload_device.get_setting_mode()
-                    eload_measure_current = self.eload_device.get_measure_current()
                     eload_measure_voltage = self.eload_device.get_measure_voltage()
-            time.sleep(5)
+                    eload_measure_current = self.eload_device.get_measure_current()
+                    eload_measure_power = self.eload_device.get_measure_power()
+                    upload_data = "{0},{1},{2},{3},{4}".format(eload_input_state, eload_mode, eload_measure_voltage
+                                                               , eload_measure_current, eload_measure_power)
+                    self.output_device_data_signal.emit("eload", upload_data)
+                self.eload_data_refresh_flag = False
+            time.sleep(self.device_data_scan_time)
+
+    def device_data_refresh(self):
+        self.dc_data_refresh_flag = True
+        self.eload_data_refresh_flag = True
 
     def rule_process(self, log_path, log_first_value, cycle_rule, group_loop_count, dc_init_config):
         # 检查Log文件路径
@@ -210,7 +249,7 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
                 return
 
         self.output_register_name_signal.emit(line.replace('\n', ''))
-
+        self.monitor_register_list.clear()
         self.log_file_path = log_path
         self.cycle_rule = temp_cycle_rule
         self.register_line = re.split(';|,|\t|\n', line)
@@ -471,6 +510,18 @@ class MyMainForm(QMainWindow, ui_mainwindow.Ui_MainWindow):
         if os.path.exists('temp.ini'):
             self.serial_control_tab.serial_init('temp.ini')
             self.rule_tab.load_rule('temp.ini')
+
+    def closeEvent(self, event):
+        if self.test_status:
+            reply = QMessageBox.question(self, u'警告', u'正在测试，确认退出?', QMessageBox.Yes, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.device_data_scan_flag = False
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            self.device_data_scan_flag = False
+            event.accept()
 
 
 if __name__ == "__main__":

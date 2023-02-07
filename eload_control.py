@@ -218,28 +218,34 @@ class HengHuiEload:
         if re.search('on', tran_mode, re.I):
             self.ser.write(':CURR:LLEV?\n'.encode('utf-8'))
             read_back_power_l = self.serial_read_message().replace('\n', '')
+            read_back_power_l = float(read_back_power_l) if self.check_float(read_back_power_l) else 'None'
             self.ser.write(':TRAN:LTIM?\n'.encode('utf-8'))
             read_back_time_l = self.serial_read_message().replace('\n', '')
+            read_back_time_l= float(read_back_time_l) if self.check_float(read_back_time_l) else 'None'
             self.ser.write(':CURR:HLEV?\n'.encode('utf-8'))
             read_back_power_h = self.serial_read_message().replace('\n', '')
+            read_back_power_h= float(read_back_power_h) if self.check_float(read_back_power_h) else 'None'
             self.ser.write(':TRAN:HTIM?\n'.encode('utf-8'))
             read_back_time_h = self.serial_read_message().replace('\n', '')
+            read_back_time_h= float(read_back_time_h) if self.check_float(read_back_time_h) else 'None'
             self.control_flag = False
-            return "{0},{1},{2},{3},{4}".format('TRAN', read_back_power_l, read_back_time_l, read_back_power_h, read_back_time_h)
+            return "{0},{1}A {2}s\n{3}A {4}s".format('TRAN', read_back_power_l, read_back_time_l,
+                                                     read_back_power_h, read_back_time_h)
         else:
             if re.search('cc', mode, re.I):
                 self.ser.write('curr?\n'.encode('utf-8'))
                 value = self.serial_read_message().replace('\n', '')
-                value = (value + 'A') if value else 'None'
+                value = float(value) if self.check_float(value) else 'None'
             elif re.search('cp', mode, re.I):
                 self.ser.write('POW?\n'.encode('utf-8'))
                 value = self.serial_read_message().replace('\n', '')
-                value = (value + 'W') if value else 'None'
+                value = float(value) if self.check_float(value) else 'None'
             elif re.search('cr', mode, re.I):
                 self.ser.write('RES?\n'.encode('utf-8'))
                 value = self.serial_read_message().replace('\n', '')
-                value = (value + 'Ω') if value else 'None'
+                value = float(value) if self.check_float(value) else 'None'
             else:
+                self.control_flag = False
                 return "None,None"
             self.control_flag = False
             return "{0},{1}".format(mode, value)
@@ -250,7 +256,7 @@ class HengHuiEload:
         self.control_flag = True
         self.ser.write(':MEAS:CURR?\n'.encode('utf-8'))
         current = self.serial_read_message().replace('\n', '')
-        current = (current + 'A') if current else 'None'
+        current = float(current) if self.check_float(current) else 'None'
         self.control_flag = False
         return current
 
@@ -260,9 +266,19 @@ class HengHuiEload:
         self.control_flag = True
         self.ser.write(':MEAS:VOLT?\n'.encode('utf-8'))
         voltage = self.serial_read_message().replace('\n', '')
-        voltage = (voltage + 'V') if voltage else 'None'
+        voltage = float(voltage) if self.check_float(voltage) else 'None'
         self.control_flag = False
         return voltage
+
+    def get_measure_power(self):
+        while self.control_flag:
+            continue
+        self.control_flag = True
+        self.ser.write(':MEAS:POW?\n'.encode('utf-8'))
+        power = self.serial_read_message().replace('\n', '')
+        power = float(power) if self.check_float(power) else 'None'
+        self.control_flag = False
+        return power
 
     @staticmethod
     def check_float(string):

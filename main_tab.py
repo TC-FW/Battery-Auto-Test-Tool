@@ -1,25 +1,29 @@
 import re
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QFont, QBrush, QColor
-from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem, QAbstractItemView, QHeaderView, QCheckBox
+from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem, QAbstractItemView, QHeaderView
+
 
 from homepage import ui_main_tab
 
 
 class MainTab(QMainWindow, ui_main_tab.Ui_Form):
-    input_register_name_signal= QtCore.pyqtSignal(str)
+    input_register_name_signal = QtCore.pyqtSignal(str)
     input_register_value_signal = QtCore.pyqtSignal(str)
     input_test_status_signal = QtCore.pyqtSignal(bool)
     input_test_status_table_signal = QtCore.pyqtSignal(int, str, bool)
     input_monitor_register_signal = QtCore.pyqtSignal(str, str)
+    input_device_data_signal = QtCore.pyqtSignal(str, str)
 
     output_test_start_signal = QtCore.pyqtSignal()
     output_test_stop_signal = QtCore.pyqtSignal()
-    output_device_scan_signal = QtCore.pyqtSignal(bool)
+    output_device_data_scan_signal = QtCore.pyqtSignal(bool)
+    output_device_data_scan_time_signal = QtCore.pyqtSignal(str)
     output_dc_control_signal = QtCore.pyqtSignal(str, str)
     output_eload_control_signal = QtCore.pyqtSignal(str, str)
     output_monitor_register_num_signal = QtCore.pyqtSignal(bool, int)
+    output_device_data_refresh_signal = QtCore.pyqtSignal()
 
     def __init__(self, parent, tab):
         super(MainTab, self).__init__(parent)
@@ -33,13 +37,20 @@ class MainTab(QMainWindow, ui_main_tab.Ui_Form):
         self.input_test_status_signal.connect(self.test_status_update)
         self.input_test_status_table_signal.connect(self.test_status_table_update)
         self.input_monitor_register_signal.connect(self.moniter_register_update)
+        self.input_device_data_signal.connect(self.device_data_update)
 
         self.test_start_button.clicked.connect(lambda: self.output_test_start_signal.emit())
         self.test_stop_button.clicked.connect(lambda: self.output_test_stop_signal.emit())
+        self.device_data_refresh_button.clicked.connect(lambda: self.output_device_data_refresh_signal.emit())
 
         self.device_data_scan_checkbox.clicked.connect(
-            lambda: self.output_device_scan_signal.emit(True) if self.device_data_scan_checkbox.isChecked()
-            else self.output_device_scan_signal.emit(False))
+            lambda: self.output_device_data_scan_signal.emit(True) if self.device_data_scan_checkbox.isChecked()
+            else self.output_device_data_scan_signal.emit(False))
+        self.scan_time_combobox.currentTextChanged.connect(
+            lambda: self.output_device_data_scan_time_signal.emit(self.scan_time_combobox.currentText()))
+
+        self.scan_time_combobox.setEditable(True)
+        self.scan_time_combobox.setCurrentText('5')
 
         self.test_status_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.register_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -75,13 +86,13 @@ class MainTab(QMainWindow, ui_main_tab.Ui_Form):
             lambda: self.output_eload_control_signal.emit('input', 'on'))
         self.eload_input_off_button.clicked.connect(
             lambda: self.output_eload_control_signal.emit('input', 'off'))
-        self.eload_mode_value_input.returnPressed.connect(lambda : self.eload_mode_set_button.click())
+        self.eload_mode_value_input.returnPressed.connect(lambda: self.eload_mode_set_button.click())
 
         self.register_table.doubleClicked.connect(self.add_monitor_register)
 
     def table_register_name_update(self, register_name_line):
         register_name = re.split(';|,|\t|\n', register_name_line)
-        self.register_table.clear() # 清空表格
+        self.register_table.clear()  # 清空表格
         self.register_table.setColumnCount(3)  # 设定列数
         self.register_table.setRowCount(len(register_name))  # 设定行数
         self.register_table.setHorizontalHeaderLabels(['Register', 'Value', 'Monitor'])  # 设定列的标题
@@ -97,6 +108,23 @@ class MainTab(QMainWindow, ui_main_tab.Ui_Form):
         for i in range(len(register_value)):
             self.register_table.setItem(i, 1, QTableWidgetItem(register_value[i]))
         self.register_table.update()
+
+    def device_data_update(self, device, data):
+        if device == 'dc':
+            device_num = 0
+        elif device == 'eload':
+            device_num = 1
+        else:
+            return
+        parameter = data.split(',')
+        for i in range(6):
+            if 'None' not in parameter[i]:
+                self.device_data_table.setItem(device_num, i, QTableWidgetItem(parameter[i]))
+                self.device_data_table.item(device_num, i).setForeground(QBrush(QColor('black')))
+                self.device_data_table.item(device_num, i).setTextAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
+            else:
+                if self.device_data_table.item(device_num, i):
+                    self.device_data_table.item(device_num, i).setForeground(QBrush(QColor('blue')))
 
     def moniter_register_update(self, register_name_line, register_value_line):
         if register_name_line == '' or register_value_line == '':

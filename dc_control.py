@@ -53,16 +53,19 @@ class HengHuiDC:
         while self.control_flag:
             continue
         while True:
+            self.control_flag = True
             self.ser.write(('VOLT ' + voltage + '\n').encode('utf-8'))
             time.sleep(0.1)
             self.ser.write('VOLT?\n'.encode('utf-8'))
             read_back_voltage = self.serial_read_message().replace('\n', '')
             if self.check_float(read_back_voltage) and float(read_back_voltage) == float(voltage):
+                self.control_flag = False
                 return True
             elif error_count <= 5:
                 error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
 
     def output_on(self):
@@ -70,16 +73,19 @@ class HengHuiDC:
         while self.control_flag:
             continue
         while True:
+            self.control_flag = True
             self.ser.write('OUTPUT ON\n'.encode('utf-8'))
             time.sleep(0.1)
             self.ser.write('OUTPUT?\n'.encode('utf-8'))
             read_back_input_status = self.serial_read_message().replace('\n', '')
             if read_back_input_status != '' and read_back_input_status == 'ON':
+                self.control_flag = False
                 return True
             elif error_count <= 5:
                 error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
 
     def output_off(self):
@@ -87,16 +93,19 @@ class HengHuiDC:
         while self.control_flag:
             continue
         while True:
+            self.control_flag = True
             self.ser.write('OUTPUT OFF\n'.encode('utf-8'))
             time.sleep(0.1)
             self.ser.write('OUTPUT?\n'.encode('utf-8'))
             read_back_input_status = self.serial_read_message().replace('\n', '')
             if read_back_input_status != '' and read_back_input_status == 'OFF':
+                self.control_flag = False
                 return True
             elif error_count <= 5:
                 error_count += 1
                 continue
             else:
+                self.control_flag = False
                 return False
 
     def get_output_state(self):
@@ -115,14 +124,27 @@ class HengHuiDC:
         while self.control_flag:
             continue
         self.control_flag = True
+        self.ser.write(':STAT:OPER:COND?\n'.encode('utf-8'))
+        status = self.serial_read_message().replace('\n', '')
+        if status != '' and not re.search("[^\+,0-9]", status):
+            if int(status) == 512:
+                mode = "CV"
+            elif int(status) == 1024:
+                mode = "CC"
+            elif int(status) == 0:
+                mode = " "
+            else:
+                mode = "None"
+        else:
+            mode = "None"
         self.ser.write('CURR?\n'.encode('utf-8'))
         setting_current = self.serial_read_message().replace('\n', '')
-        setting_current = (setting_current + 'A') if setting_current else 'None'
+        setting_current = float(setting_current) if self.check_float(setting_current) else 'None'
         self.ser.write('VOLT?\n'.encode('utf-8'))
         setting_voltage = self.serial_read_message().replace('\n', '')
-        setting_voltage = (setting_voltage + 'V') if setting_voltage else 'None'
+        setting_voltage = float(setting_voltage) if self.check_float(setting_voltage) else 'None'
         self.control_flag = False
-        return "{0}{1}".format(setting_voltage, setting_current)
+        return "{0},{1}V\n{2}A".format(mode, setting_voltage, setting_current)
 
     def get_measure_current(self):
         while self.control_flag:
@@ -130,7 +152,7 @@ class HengHuiDC:
         self.control_flag = True
         self.ser.write(':MEAS:CURR?\n'.encode('utf-8'))
         current = self.serial_read_message().replace('\n', '')
-        current = (current + 'A') if current else 'None'
+        current = float(current) if self.check_float(current) else 'None'
         self.control_flag = False
         return current
 
@@ -140,9 +162,19 @@ class HengHuiDC:
         self.control_flag = True
         self.ser.write(':MEAS:VOLT?\n'.encode('utf-8'))
         voltage = self.serial_read_message().replace('\n', '')
-        voltage = (voltage + 'V') if voltage else 'None'
+        voltage = float(voltage) if self.check_float(voltage) else 'None'
         self.control_flag = False
         return voltage
+
+    def get_measure_power(self):
+        while self.control_flag:
+            continue
+        self.control_flag = True
+        self.ser.write(':MEAS:POW?\n'.encode('utf-8'))
+        power = self.serial_read_message().replace('\n', '')
+        power = float(power) if self.check_float(power) else 'None'
+        self.control_flag = False
+        return power
 
     @staticmethod
     def check_float(string):

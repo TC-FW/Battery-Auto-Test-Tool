@@ -2,7 +2,6 @@ import os
 import re
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QComboBox, QCheckBox, QHeaderView, QFileDialog, QTableWidgetItem, QMenu, \
     QAbstractItemView
 import configparser
@@ -96,7 +95,7 @@ class RuleTab(QMainWindow, ui_rule_tab.Ui_Form):
         register_combox = QComboBox()
         register_combox.addItems(self.register_list)
         register_combox.setEditable(True)
-        register_combox.view().setTextElideMode(Qt.ElideNone)
+        register_combox.view().setTextElideMode(QtCore.Qt.ElideNone)
         register_combox.view().setFixedWidth(150)
 
         combox2 = QComboBox()
